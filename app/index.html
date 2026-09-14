@@ -14,6 +14,24 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 .btn{pointer-events:auto;background:#211449cc;color:#fff;border:1px solid #52f5ff;padding:8px 12px;cursor:pointer;font-size:13px}
 .layer{position:fixed;z-index:4;inset:0;display:grid;place-items:center;background:#060313eF}
 .off{display:none}
+.auth-layer{position:fixed;z-index:8;inset:0;display:grid;place-items:center;padding:20px;background:#060313}
+.auth-card{width:min(420px,calc(100vw - 28px));padding:26px;background:#100a2b;border:1px solid #52f5ff;box-shadow:0 0 54px #3b2a86;text-align:center}
+.auth-card h1{margin:0;color:#52f5ff;font-size:30px;letter-spacing:2px}
+.auth-card>p{margin:6px 0 18px;color:#9d93c8;font-size:13px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;margin-bottom:16px;border:1px solid #34296a}
+.auth-tabs button{min-height:42px;margin:0;background:#17103a;border:0;color:#9d93c8;cursor:pointer}
+.auth-tabs button.on{background:#28135a;color:#52f5ff;box-shadow:inset 0 -2px #52f5ff}
+.auth-field{display:grid;gap:6px;margin:10px 0;color:#cdd6ff;font-size:13px;text-align:start}
+.auth-field input{width:100%;box-sizing:border-box;padding:11px 12px;background:#0b0822;border:1px solid #4d4080;color:#fff;font-size:15px}
+.auth-field input:focus{outline:2px solid #52f5ff;outline-offset:1px}
+.auth-layer.off,.auth-field.off{display:none}
+.auth-msg{min-height:20px;margin:10px 0;color:#bdb4e5;font-size:13px;text-align:center}
+.auth-msg.error{color:#ff9aae}
+.auth-submit{width:100%;min-height:46px;margin:2px 0 10px!important;background:#382080!important;border-color:#846cff!important;font-size:16px!important}
+.auth-dev{width:100%;min-height:42px;margin:0!important;background:#17103a!important;border-color:#ffd94a!important;color:#fff3ad!important}
+.account-bar{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:8px;padding:7px 10px;background:#0b0822;border:1px solid #2c2163;font-size:12px;color:#9d93c8}
+.account-bar b{color:#52f5ff}.account-bar small{padding:2px 7px;background:#28135a;color:#fff3ad}
+.account-bar button{min-height:32px;margin:0;padding:5px 10px;font-size:12px}
 .box{background:#100a2b;border:1px solid #52f5ff;padding:22px 30px;text-align:center;min-width:300px;box-shadow:0 0 46px #3b2a86}
 .box h1{color:#52f5ff;margin:4px 0 10px}
 .box p{margin:6px 0}
@@ -87,9 +105,20 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
 .item-card .buy{font-size:12px;padding:6px 8px;min-width:74px;text-align:center}
 .item-card .owned{color:#ffd94a;font-size:12px;grid-column:3;text-align:end}
 .item-card button:disabled{cursor:not-allowed;opacity:.55}
+.item-card.backpack-item{grid-template-columns:44px minmax(0,1fr) auto;grid-template-rows:auto auto auto;row-gap:6px}
+.item-card.backpack-item.selected{border-color:#ffd94a;box-shadow:inset 0 0 18px #ffd94a1c}
+.item-card.backpack-item>.item-ic{grid-column:1;grid-row:1/4}
+.item-card.backpack-item>h3{grid-column:2;grid-row:1}
+.item-card.backpack-item>.owned{grid-column:3;grid-row:1}
+.item-card.backpack-item>p{grid-column:2/4;grid-row:2}
+.item-actions{grid-column:2/4;grid-row:3;display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.item-actions button{min-height:34px;margin:0;padding:6px 9px;font-size:12px;white-space:nowrap}
+.item-actions .carry.on{border-color:#ffd94a;background:#4b3a14;color:#fff3ad}
+#itemGrid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 .loadout-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-top:10px}
 .slot{width:60px;height:60px;border:1px dashed #846cff88;background:#0b0822;display:grid;place-items:center;font-size:22px;position:relative}
 .slot.fill{border-style:solid;border-color:#ffd94a;cursor:pointer}
+.slot .empty{color:#6f6698;font-size:24px}
 .slot small{position:absolute;bottom:-14px;font-size:10px;color:#9d93c8;left:0;right:0}
 .stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
 .stat-card{background:#0b0822;border:1px solid #34296a;padding:8px;text-align:center}
@@ -105,7 +134,7 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
 .hist-filter button{font-size:12px;padding:5px 10px;background:#17103a;border:1px solid #34296a;color:#cdd6ff;cursor:pointer}
 .hist-filter button.on{border-color:#52f5ff;color:#52f5ff}
 .shop-grid.costumes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-@media(max-width:640px){.menu-body{min-width:94vw;padding:14px}.hist-row{grid-template-columns:1fr auto auto;grid-template-rows:auto auto}.lv-grid{grid-template-columns:1fr 1fr}.item-card{grid-template-columns:38px 1fr}}
+@media(max-width:640px){.menu-body{min-width:94vw;padding:14px}.hist-row{grid-template-columns:1fr auto auto;grid-template-rows:auto auto}.lv-grid{grid-template-columns:1fr 1fr}.item-card{grid-template-columns:38px 1fr}.item-card.backpack-item{grid-template-columns:38px minmax(0,1fr)}.item-card.backpack-item>.item-ic{grid-column:1;grid-row:1/4}.item-card.backpack-item>h3,.item-card.backpack-item>p,.item-card.backpack-item>.owned,.item-actions{grid-column:2}.item-card.backpack-item>.owned{grid-row:3}.item-actions{grid-row:4}}
 /* ===== 每日任务 ===== */
 .task-card{display:grid;grid-template-columns:auto 1fr auto;gap:10px 14px;align-items:center;padding:12px 14px;background:#0b0822;border:1px solid #34296a;margin-bottom:10px;text-align:start}
 .task-ic{width:46px;height:46px;display:grid;place-items:center;font-size:24px;background:#17103a;border:1px solid #846cff55;grid-row:1/3}
@@ -127,7 +156,20 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
 .set-block .side-btn.on{border-color:#52f5ff;color:#fff;background:#28135a;box-shadow:0 0 10px #52f5ff33}
 #volSlider{cursor:pointer}
 </style>
+<link rel="stylesheet" href="pc.css">
 <canvas id="c"></canvas>
+<div id="pcTitlebar" class="pc-titlebar">
+  <div class="pc-titlebar-brand">
+    <span>N</span>
+    <b>霓虹跑酷</b>
+    <small id="pcTitleVersion">PC</small>
+  </div>
+  <div class="pc-titlebar-actions">
+    <button id="pcMinBtn" type="button" title="最小化" aria-label="最小化">—</button>
+    <button id="pcMaxBtn" type="button" title="最大化" aria-label="最大化">▢</button>
+    <button id="pcCloseBtn" type="button" title="关闭" aria-label="关闭">✕</button>
+  </div>
+</div>
 <div class="hud">
   <div>NEON RUN<br><small>关卡：<b id="lv">1</b></small><div class="best">纪录 <b id="best">0</b></div></div>
   <div style="text-align:right">
@@ -139,36 +181,105 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
 </div>
 <div class="hud-items" id="hudItems"></div>
 <div class="hud-buffs" id="hudBuffs"></div>
-<div id="menu" class="layer">
-  <div class="box menu-body">
-    <h1>霓虹跑酷</h1>
-    <p class="menu-tag" id="menuTag">NEON RUN · 越跑越疯狂</p>
-    <div class="menu-top">
-      <div class="menu-actions">
-        <button id="menuShopBtn" class="shop-open">装扮商店 · <span class="coin">0</span> 金币</button>
-        <button id="menuItemsBtn">🎒 道具背包</button>
-        <button id="menuUpgradeBtn">⚡ 被动升级</button>
-        <button id="menuDailyBtn">📅 每日任务</button>
-        <button id="menuHistBtn">📜 挑战历史</button>
-        <button id="menuSetBtn">⚙ 设置</button>
+<div id="authLayer" class="auth-layer" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <div class="auth-shell">
+    <aside class="auth-visual" aria-hidden="true">
+      <div class="auth-brand">
+        <div class="auth-mark">N</div>
+        <h1>霓虹跑酷</h1>
+        <small>Neon Run PC</small>
       </div>
+      <div class="auth-metrics">
+        <div class="auth-metric"><i>◇</i><span>档案<b>本地保存</b></span></div>
+        <div class="auth-metric"><i>◈</i><span>关卡<b>10 关</b></span></div>
+        <div class="auth-metric"><i>◆</i><span>版本<b id="pcLoginVersion">PC</b></span></div>
+      </div>
+      <div class="auth-status">
+        <span class="pc-chip">PC</span>
+        <span class="pc-chip mag">Desktop</span>
+        <span class="pc-chip gold">Offline</span>
+      </div>
+    </aside>
+    <form id="authForm" class="auth-card">
+      <h1 id="authTitle">霓虹跑酷</h1>
+      <p>本地账号数据仅保存在这台设备上</p>
+      <div class="auth-tabs" role="tablist">
+        <button type="button" id="authLoginTab" class="on" aria-selected="true">登录</button>
+        <button type="button" id="authRegisterTab" aria-selected="false">注册</button>
+      </div>
+      <label class="auth-field">用户名
+        <input id="authName" name="username" maxlength="16" autocomplete="username" placeholder="2-16 个字符">
+      </label>
+      <label class="auth-field">密码
+        <input id="authPass" name="password" type="password" maxlength="32" autocomplete="current-password" placeholder="至少 4 个字符">
+      </label>
+      <label class="auth-field off" id="authConfirmWrap">确认密码
+        <input id="authPass2" type="password" maxlength="32" autocomplete="new-password" placeholder="再次输入密码">
+      </label>
+      <label class="auth-field off" id="authDevKeyWrap">开发者密钥
+        <input id="authDevKey" type="password" maxlength="32" autocomplete="off" placeholder="输入开发者密钥">
+      </label>
+      <p id="authMsg" class="auth-msg" role="status" aria-live="polite">普通用户初始 0 金币</p>
+      <button id="authSubmit" type="submit" class="auth-submit">登录</button>
+      <button id="authDevBtn" type="button" class="auth-dev">开发者模式 · 需要密钥</button>
+    </form>
+  </div>
+</div>
+<div id="menu" class="layer off">
+  <div class="box menu-body">
+    <header class="menu-header">
+      <div class="menu-identity">
+        <div class="auth-mark">N</div>
+        <div>
+          <h1>霓虹跑酷</h1>
+          <small>Neon Run PC</small>
+        </div>
+      </div>
+      <div class="account-bar">
+        <span>当前账号 <b id="accountName">--</b> <small id="accountRole">普通用户</small></span>
+        <button id="logoutBtn" type="button">退出登录</button>
+      </div>
+    </header>
+    <div class="menu-layout">
+      <aside class="menu-rail">
+        <p class="rail-label">控制中心</p>
+        <div class="menu-actions">
+          <button id="menuShopBtn" class="shop-open">装扮商店 · <span class="coin">0</span> 金币</button>
+          <button id="menuItemsBtn">🎒 道具背包</button>
+          <button id="menuUpgradeBtn">⚡ 被动升级</button>
+          <button id="menuDailyBtn">📅 每日任务</button>
+          <button id="menuHistBtn">📜 挑战历史</button>
+          <button id="menuSetBtn">⚙ 设置</button>
+        </div>
+        <div class="pc-panel">
+          <div class="pc-panel-row"><span>版本</span><b id="pcVersion">--</b></div>
+          <div class="pc-panel-row"><span>窗口</span><b id="pcWindowState">--</b></div>
+          <div class="pc-panel-row">
+            <span>显示</span>
+            <button id="pcFullscreenBtn" class="pc-icon-btn" type="button" title="切换全屏">⛶</button>
+          </div>
+        </div>
+      </aside>
+      <section class="menu-main">
+        <p class="menu-tag" id="menuTag">NEON RUN · 越跑越疯狂</p>
+        <div class="lv-grid" id="lvGrid"></div>
+        <div class="sel-line">
+          <span>选择角色方向</span>
+          <span class="row" style="margin:0">
+            <button data-s="1" id="side1Btn" class="side-btn">为何意<br><small>左 → 右</small></button>
+            <button data-s="-1" id="side2Btn" class="side-btn">邱家杨<br><small>右 → 左</small></button>
+          </span>
+          <span>携带道具 <b id="loadoutHint">0</b> / 2</span>
+        </div>
+        <div class="row">
+          <button id="startBtn">▶ 开始挑战</button>
+        </div>
+        <small><span class="star">●</span> 吃能量球得分，连续吃触发连击倍率；<span style="color:#52f5ff">□ 发光道具盒</span>吃到即时生效（护盾/磁铁/冲刺等）</small>
+        <small><span style="color:#ff8c42">▲</span> <b style="color:#ff8c42">疯狗</b>从身后追你！它扑来时要<span style="color:#ff8c42">跳起来躲</span>，落地会被咬住；新关有<b style="color:#9d93c8">低重力/沙暴/洋流/陨石</b>等特殊地形</small>
+        <small><kbd>空格</kbd><kbd>↑</kbd><kbd>W</kbd> / 点击屏幕 跳跃 · 空中可<span style="color:#ffd94a">二段跳</span> · 长按跳更高</small>
+        <small><kbd>1</kbd>-<kbd>5</kbd> 使用道具 · <kbd>P</kbd> 暂停 · <kbd>R</kbd> 快速重开</small>
+      </section>
     </div>
-    <div class="lv-grid" id="lvGrid"></div>
-    <div class="sel-line">
-      <span>选择角色方向</span>
-      <span class="row" style="margin:0">
-        <button data-s="1" id="side1Btn" class="side-btn">为何意<br><small>左 → 右</small></button>
-        <button data-s="-1" id="side2Btn" class="side-btn">邱家杨<br><small>右 → 左</small></button>
-      </span>
-      <span>携带道具 <b id="loadoutHint">0</b> / 2</span>
-    </div>
-    <div class="row">
-      <button id="startBtn" style="font-size:16px;padding:12px 34px">▶ 开始挑战</button>
-    </div>
-    <small><span class="star">●</span> 吃能量球得分，连续吃触发连击倍率；<span style="color:#52f5ff">□ 发光道具盒</span>吃到即时生效（护盾/磁铁/冲刺等）</small>
-    <small><span style="color:#ff8c42">▲</span> <b style="color:#ff8c42">疯狗</b>从身后追你！它扑来时要<span style="color:#ff8c42">跳起来躲</span>，落地会被咬住；新关有<b style="color:#9d93c8">低重力/沙暴/洋流/陨石</b>等特殊地形</small>
-    <small><kbd>空格</kbd><kbd>↑</kbd><kbd>W</kbd> / 点击屏幕 跳跃 · 空中可<span style="color:#ffd94a">二段跳</span> · 长按跳更高</small>
-    <small><kbd>1</kbd>-<kbd>5</kbd> 使用道具 · <kbd>P</kbd> 暂停 · <kbd>R</kbd> 快速重开</small>
   </div>
 </div>
 <div id="tutIntro" class="layer off">
@@ -230,7 +341,7 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
       <div class="shop-balance">余额 <b id="itemCoins">0</b> <button id="itemCloseBtn" class="shop-close" aria-label="关闭">×</button></div>
     </header>
     <div class="dialog-main">
-      <p class="dialog-hint">背包即购即存；下方选择「本局携带」的道具。</p>
+      <p class="dialog-hint">购买后点击「携带」装入空槽；点击「已携带」可卸下，每局最多带 2 个。</p>
       <div class="item-list" id="itemGrid"></div>
       <div class="loadout-row">
         <span style="color:#9d93c8">携带槽</span>
@@ -317,9 +428,18 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
           <button id="sfxTestBtn" class="side-btn">▶ 试听</button>
         </div>
       </div>
+      <div class="set-block">
+        <div class="set-label">软件更新</div>
+        <div class="row" style="justify-content:flex-start">
+          <button id="updateCheckBtn" class="side-btn">检查更新</button>
+          <button id="updateActionBtn" class="side-btn off">下载更新</button>
+        </div>
+        <div class="set-desc" id="updateStatus">当前版本载入中</div>
+      </div>
     </div>
   </div>
 </dialog>
+<script src="pc.js"></script>
 <script>
 (function () {
 const c = document.querySelector('#c');
@@ -333,6 +453,23 @@ const scEl = document.querySelector('#sc');
 const bestEl = document.querySelector('#best');
 const comboBox = document.querySelector('#comboBox');
 const coinHud = document.querySelector('#coinHud');
+const authLayer = document.querySelector('#authLayer');
+const authForm = document.querySelector('#authForm');
+const authTitle = document.querySelector('#authTitle');
+const authLoginTab = document.querySelector('#authLoginTab');
+const authRegisterTab = document.querySelector('#authRegisterTab');
+const authName = document.querySelector('#authName');
+const authPass = document.querySelector('#authPass');
+const authPass2 = document.querySelector('#authPass2');
+const authConfirmWrap = document.querySelector('#authConfirmWrap');
+const authDevKey = document.querySelector('#authDevKey');
+const authDevKeyWrap = document.querySelector('#authDevKeyWrap');
+const authMsg = document.querySelector('#authMsg');
+const authSubmit = document.querySelector('#authSubmit');
+const authDevBtn = document.querySelector('#authDevBtn');
+const accountName = document.querySelector('#accountName');
+const accountRole = document.querySelector('#accountRole');
+const logoutBtn = document.querySelector('#logoutBtn');
 const shopDialog = document.querySelector('#shopDialog');
 const shopGrid = document.querySelector('#shopGrid');
 const shopCoins = document.querySelector('#shopCoins');
@@ -376,6 +513,9 @@ const fsDesc = document.querySelector('#fsDesc');
 const volSlider = document.querySelector('#volSlider');
 const volVal = document.querySelector('#volVal');
 const muteBtn = document.querySelector('#muteBtn');
+const updateCheckBtn = document.querySelector('#updateCheckBtn');
+const updateActionBtn = document.querySelector('#updateActionBtn');
+const updateStatus = document.querySelector('#updateStatus');
 const sfxTestBtn = document.querySelector('#sfxTestBtn');
 const tutIntro = document.querySelector('#tutIntro');
 const tutHint = document.querySelector('#tutHint');
@@ -391,6 +531,21 @@ const runDetailEl = document.querySelector('#runDetail');
 const endTitleEl = document.querySelector('#endTitle');
 
 // ===== 常量 / 状态 =====
+const ACCOUNTS_KEY = 'neon_accounts_v2';
+const SESSION_KEY = 'neon_session_v2';
+const DEVELOPER_KEYS_USED_KEY = 'neon_developer_keys_used_v1';
+const DEVELOPER_KEYS = new Set([
+  'NRN-DEV-7Q4M2X9K',
+  'NRN-DEV-5T8C1P6V',
+  'NRN-DEV-3W9B4Y2H',
+  'NRN-DEV-6R2L8D5S',
+  'NRN-DEV-9F1J7K3Q',
+  'NRN-DEV-2M5P8V4T',
+  'NRN-DEV-8C3X6N1B',
+  'NRN-DEV-4H7S2R9L',
+  'NRN-DEV-1D6G5W3Z',
+  'NRN-DEV-0A9E4U7M'
+]);
 const SHOP_KEY = 'neon_shop_v1';
 const PROGRESS_KEY = 'neon_progress_v1';
 const HISTORY_KEY = 'neon_history_v1';
@@ -421,10 +576,88 @@ const DOG_CHASE = 250;          // 平时狗在玩家身后距离px（差一点�
 const DOG_MIN_CHASE = 210;      // 追击中允许贴近的最小距离（制造压迫感）
 const DOG_WINDUP = 34;          // 扑咬预警时长(帧≈0.55s)
 const DOG_BITE_H = 48;          // 玩家脚离地<此高度且狗到位置 => 被咬
-// 角色配色：为何意(左→右)=绿，邱家杨(右→左)=粉（对应两张火柴人参考图）
+// 角色配色：为何意(左→右)=绿，邱家杨(右→左)=粉（各自使用火柴人参考图）
 const C_GREEN = '#00ff80';
 const C_PINK = '#ff2fd6';
 function runnerColor() { return side === 1 ? C_GREEN : C_PINK; }
+const WHY_REFERENCE_CROP = { x: 42, y: 1, w: 330, h: 531 };
+const WHY_JUMP_REFERENCE_CROP = { x: 376, y: 237, w: 580, h: 700 };
+const QIU_REFERENCE_CROP = { x: 0, y: 0, w: 585, h: 833 };
+const QIU_JUMP_REFERENCE_CROP = { x: 49, y: 55, w: 875, h: 745 };
+function createReferenceSprite(image, crop, alphaForPixel) {
+  const sprite = document.createElement('canvas');
+  sprite.width = crop.w;
+  sprite.height = crop.h;
+  const spriteCtx = sprite.getContext('2d', { willReadFrequently: true });
+  spriteCtx.drawImage(image, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+  const pixels = spriteCtx.getImageData(0, 0, sprite.width, sprite.height);
+  const data = pixels.data;
+  for (let i = 0; i < data.length; i += 4) {
+    data[i + 3] = Math.max(0, Math.min(255, alphaForPixel(data[i], data[i + 1], data[i + 2])));
+  }
+  spriteCtx.putImageData(pixels, 0, 0);
+  return sprite;
+}
+const whyReference = new Image();
+let whyReferenceSprite = null;
+whyReference.src = 'why-character-reference.png';
+whyReference.onload = () => {
+  try {
+    whyReferenceSprite = createReferenceSprite(
+      whyReference,
+      WHY_REFERENCE_CROP,
+      (r, g, b) => (Math.max(r, g, b) - 10) * 6
+    );
+  } catch (e) {
+    whyReferenceSprite = whyReference;
+  }
+  if (shopDialog.open) renderShop();
+};
+const whyJumpReference = new Image();
+let whyJumpReferenceSprite = null;
+whyJumpReference.src = 'why-character-jump-reference.jpg';
+whyJumpReference.onload = () => {
+  try {
+    whyJumpReferenceSprite = createReferenceSprite(
+      whyJumpReference,
+      WHY_JUMP_REFERENCE_CROP,
+      (r, g, b) => Math.max(
+        (g - Math.max(r, b) - 20) * 10,
+        (Math.min(r, g, b) - 90) * 4
+      )
+    );
+  } catch (e) {
+    whyJumpReferenceSprite = whyJumpReference;
+  }
+};
+const qiuReference = new Image();
+let qiuReferenceSprite = null;
+qiuReference.src = 'qiu-character-reference.png';
+qiuReference.onload = () => {
+  try {
+    qiuReferenceSprite = createReferenceSprite(
+      qiuReference,
+      QIU_REFERENCE_CROP,
+      (r, g, b) => (Math.max(r, g, b) - 10) * 6
+    );
+  } catch (e) {
+    qiuReferenceSprite = qiuReference;
+  }
+};
+const qiuJumpReference = new Image();
+let qiuJumpReferenceSprite = null;
+qiuJumpReference.src = 'qiu-character-jump-reference.png';
+qiuJumpReference.onload = () => {
+  try {
+    qiuJumpReferenceSprite = createReferenceSprite(
+      qiuJumpReference,
+      QIU_JUMP_REFERENCE_CROP,
+      (r, g, b) => (Math.max(r, g, b) - 10) * 6
+    );
+  } catch (e) {
+    qiuJumpReferenceSprite = qiuJumpReference;
+  }
+};
 // ===== 五关配置 =====
 // type: 'none'基础柱 | 'double'夹缝双层柱 | 'erupt'喷发柱
 // sweep: 独立扁障碍(火球低扫/激光)
@@ -669,12 +902,28 @@ let sweeps = [];   // 扁障碍（低扫火球 / 激光）
 let py = 0, pvy = 0, jumpCount = 0, holdJump = 0;
 let combo = 0, comboMax = 0, last, gameT = 0, flash = 0, dying = 0, dieT = 0;
 let runCoins = 0, pendingCoins = 0, shopState, shopStorageOK = true, shopOpener = null;
+let accounts = [], currentUser = null, authMode = 'login';
 // 主题天空渐变缓存（每次绘制复用，避免每帧创建渐变对象）
 const gradCache = { key: '', sky: null };
 // HUD 文本缓存（sp/combo 内容未变化时不写 DOM）
 let lastSpTxt = '', lastComboHtml = '';
 // ===== 设置 =====
 const SETTINGS_KEY = 'neon_settings_v1';
+function userStorageKey(base) {
+  return currentUser ? base + '::' + currentUser.id : base;
+}
+function isDeveloper() {
+  return !!currentUser && currentUser.role === 'developer';
+}
+function coinText(value) {
+  return isDeveloper() ? '∞' : String(value);
+}
+function canAfford(price) {
+  return isDeveloper() || shopState.coins >= price;
+}
+function coinsAfterPurchase(price) {
+  return isDeveloper() ? shopState.coins : shopState.coins - price;
+}
 // 窗口大小三档预设（medium 为默认 1280x800）
 const WINDOW_PRESETS = [
   { id: 'small', label: '小窗', w: 960, h: 600 },
@@ -683,8 +932,9 @@ const WINDOW_PRESETS = [
 ];
 let settings = { sfx: 0.6, muted: false, winSize: 'medium', fullscreen: false };
 function loadSettings() {
+  settings = { sfx: 0.6, muted: false, winSize: 'medium', fullscreen: false };
   try {
-    const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    const raw = JSON.parse(localStorage.getItem(userStorageKey(SETTINGS_KEY)) || 'null');
     if (raw && typeof raw === 'object') {
       settings = {
         sfx: Number.isFinite(+raw.sfx) && +raw.sfx >= 0 && +raw.sfx <= 1 ? +raw.sfx : 0.6,
@@ -696,7 +946,7 @@ function loadSettings() {
   } catch (e) { /* 保持默认 */ }
 }
 function saveSettings() {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+  try { localStorage.setItem(userStorageKey(SETTINGS_KEY), JSON.stringify(settings)); } catch (e) {}
 }
 // 应用窗口设置（首次启动与设置面板变更时）
 function applyWindowSettings() {
@@ -771,7 +1021,8 @@ function playSfx(name, comboMult = 1) {
 }
 // 道具运行态
 let buffs = {};          // { shield, magnet, slowmo, revive, double, invincible } 时间(帧)/次数
-let loadout = [];        // 本局携带的主动道具 id[]
+let loadout = [];        // 下一局选择的主动道具 id[]
+let activeLoadout = [];  // 当前局实际消耗并携带的道具 id[]
 let itemsUsed = [];      // 本局已使用的道具（历史记录）
 let dogs = [];           // 狗数组（第5关双狗）
 let lastDeath = '';      // '' | 'pillar' | 'dog' | 'laser'
@@ -787,7 +1038,7 @@ let spaceStars = [];      // 太空背景预生成星点
 
 function loadProgress() {
   let raw = null;
-  try { raw = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null'); }
+  try { raw = JSON.parse(localStorage.getItem(userStorageKey(PROGRESS_KEY)) || 'null'); }
   catch (e) { raw = null; }
   if (raw && typeof raw === 'object') {
     progress = {
@@ -795,16 +1046,12 @@ function loadProgress() {
       byLevel: (raw.byLevel && typeof raw.byLevel === 'object') ? raw.byLevel : {}
     };
   } else {
-    // 旧版 neon_best 是纯数字 → 迁移
-    let oldBest = 0;
-    try { oldBest = +(localStorage.getItem('neon_best') || 0); } catch (e) {}
-    progress = { global: oldBest, byLevel: {} };
-    if (oldBest > 0) { try { localStorage.removeItem('neon_best'); } catch (e) {} }
+    progress = { global: 0, byLevel: {} };
   }
   saveProgress();
 }
 function saveProgress() {
-  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch (e) {}
+  try { localStorage.setItem(userStorageKey(PROGRESS_KEY), JSON.stringify(progress)); } catch (e) {}
 }
 function bestOfLevel(lv) { return progress.byLevel[lv] || 0; }
 function updateBest() {
@@ -832,7 +1079,7 @@ function normalizeShopState(raw) {
 }
 function saveShopState(next = shopState) {
   try {
-    localStorage.setItem(SHOP_KEY, JSON.stringify(next));
+    localStorage.setItem(userStorageKey(SHOP_KEY), JSON.stringify(next));
     shopStorageOK = true;
     return true;
   } catch (e) {
@@ -840,21 +1087,23 @@ function saveShopState(next = shopState) {
     return false;
   }
 }
-function loadShopState() {
+function loadShopState(initialCoins = 0) {
   let raw = null;
-  try { raw = JSON.parse(localStorage.getItem(SHOP_KEY) || 'null'); }
+  const storageKey = userStorageKey(SHOP_KEY);
+  try { raw = JSON.parse(localStorage.getItem(storageKey) || 'null'); }
   catch (e) { shopStorageOK = false; }
   shopState = normalizeShopState(raw);
+  if (!raw && initialCoins > 0) shopState.coins = initialCoins;
   if (!saveShopState(shopState)) shopStorageOK = false;
 }
 function loadHistory() {
   try {
-    const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || 'null');
+    const raw = JSON.parse(localStorage.getItem(userStorageKey(HISTORY_KEY)) || 'null');
     history = Array.isArray(raw) ? raw.filter(r => r && Number.isFinite(r.t)).slice(0, MAX_HISTORY) : [];
   } catch (e) { history = []; }
 }
 function saveHistory() {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  try { localStorage.setItem(userStorageKey(HISTORY_KEY), JSON.stringify(history)); } catch (e) {}
 }
 // ===== 每日任务 =====
 function todayStr() {
@@ -877,7 +1126,7 @@ function dateSeed(str) {
 }
 function loadDaily() {
   let raw = null;
-  try { raw = JSON.parse(localStorage.getItem(DAILY_KEY) || 'null'); } catch (e) { raw = null; }
+  try { raw = JSON.parse(localStorage.getItem(userStorageKey(DAILY_KEY)) || 'null'); } catch (e) { raw = null; }
   const today = todayStr();
   if (raw && raw.date === today && Array.isArray(raw.tasks) && raw.tasks.length === 3) {
     daily = raw;
@@ -889,7 +1138,7 @@ function loadDaily() {
   }
 }
 function saveDaily() {
-  try { localStorage.setItem(DAILY_KEY, JSON.stringify(daily)); } catch (e) {}
+  try { localStorage.setItem(userStorageKey(DAILY_KEY), JSON.stringify(daily)); } catch (e) {}
 }
 // 任务进度来源：finish() 结束时调用（非教程局）
 function bumpDaily(type, amount) {
@@ -913,7 +1162,7 @@ function claimTask(idx) {
   const t = daily && daily.tasks[idx];
   if (!t || t.claimed || t.prog < t.target) return;
   t.claimed = true;
-  shopState.coins = Math.min(Number.MAX_SAFE_INTEGER, shopState.coins + t.reward);
+  if (!isDeveloper()) shopState.coins = Math.min(Number.MAX_SAFE_INTEGER, shopState.coins + t.reward);
   saveDaily();
   saveShopState();
   updateCoinUI();
@@ -955,7 +1204,7 @@ function renderTaskList() {
     card.append(ic, name, desc, progTxt, barWrap, btn);
     taskList.append(card);
   });
-  taskCoins.textContent = shopState.coins;
+  taskCoins.textContent = coinText(shopState.coins);
 }
 function openDaily() {
   loadDaily();
@@ -964,6 +1213,63 @@ function openDaily() {
   document.querySelector('#taskTitle').focus();
 }
 // ===== 设置面板 =====
+let updateState = { state: 'idle', currentVersion: '', latestVersion: null, progress: 0, message: '' };
+function renderUpdateStatus(next = updateState) {
+  updateState = next || updateState;
+  const version = updateState.currentVersion ? 'v' + updateState.currentVersion : '未知版本';
+  if (!window.neonAPI || !window.neonAPI.checkForUpdates) {
+    updateStatus.textContent = '浏览器预览模式不支持自动更新';
+    updateCheckBtn.disabled = true;
+    updateActionBtn.classList.add('off');
+    return;
+  }
+  const actionReady = updateState.state === 'available' || updateState.state === 'downloaded';
+  updateActionBtn.classList.toggle('off', !actionReady);
+  updateActionBtn.textContent = updateState.state === 'downloaded' ? '重启并更新' : '下载更新';
+  updateCheckBtn.disabled = ['checking', 'downloading', 'installing'].includes(updateState.state);
+  const messages = {
+    idle: '当前版本 ' + version,
+    checking: '正在检查更新...',
+    available: '发现新版本 v' + updateState.latestVersion,
+    downloading: '正在下载更新 ' + (updateState.progress || 0) + '%',
+    downloaded: '新版本已下载，重启后自动安装',
+    'up-to-date': '当前已是最新版本',
+    'no-release': '尚未发布可用更新',
+    error: updateState.message || '更新检查失败',
+    manual: updateState.message || '安装包已打开，请按提示完成更新',
+    installing: '正在重启并安装更新'
+  };
+  updateStatus.textContent = messages[updateState.state] || updateState.message || ('当前版本 ' + version);
+}
+async function checkGameUpdates() {
+  if (!window.neonAPI || !window.neonAPI.checkForUpdates) return;
+  renderUpdateStatus({ ...updateState, state: 'checking' });
+  try { renderUpdateStatus(await window.neonAPI.checkForUpdates()); }
+  catch (e) { renderUpdateStatus({ ...updateState, state: 'error', message: '检查更新失败' }); }
+}
+async function runUpdateAction() {
+  if (!window.neonAPI) return;
+  if (updateState.state === 'downloaded') {
+    try { renderUpdateStatus(await window.neonAPI.installUpdate()); }
+    catch (e) { renderUpdateStatus({ ...updateState, state: 'error', message: '安装更新失败' }); }
+  } else if (updateState.state === 'available') {
+    renderUpdateStatus({ ...updateState, state: 'downloading', progress: 0 });
+    try { renderUpdateStatus(await window.neonAPI.downloadUpdate()); }
+    catch (e) { renderUpdateStatus({ ...updateState, state: 'error', message: '下载更新失败' }); }
+  }
+}
+function initUpdateSystem() {
+  if (!window.neonAPI) {
+    renderUpdateStatus(updateState);
+    return;
+  }
+  window.neonAPI.onUpdateState(state => renderUpdateStatus(state));
+  window.neonAPI.getVersion()
+    .then(version => renderUpdateStatus({ ...updateState, currentVersion: version }))
+    .catch(() => renderUpdateStatus(updateState));
+  updateCheckBtn.onclick = checkGameUpdates;
+  updateActionBtn.onclick = runUpdateAction;
+}
 function renderSetPanel() {
   // 窗口尺寸三档
   winSizeRow.textContent = '';
@@ -982,6 +1288,7 @@ function renderSetPanel() {
   volVal.textContent = Math.round(settings.sfx * 100) + '%';
   muteBtn.textContent = settings.muted ? '🔇 静音：开' : '🔇 静音：关';
   muteBtn.classList.toggle('on', settings.muted);
+  renderUpdateStatus();
 }
 function openSetPanel() {
   renderSetPanel();
@@ -1036,10 +1343,10 @@ function toggleMute() {
 }
 // ===== 新手教程 =====
 function loadTutFlag() {
-  try { tutDone = localStorage.getItem(TUT_KEY) === '1'; } catch (e) { tutDone = false; }
+  try { tutDone = localStorage.getItem(userStorageKey(TUT_KEY)) === '1'; } catch (e) { tutDone = false; }
 }
 function saveTutFlag() {
-  try { localStorage.setItem(TUT_KEY, tutDone ? '1' : '0'); } catch (e) {}
+  try { localStorage.setItem(userStorageKey(TUT_KEY), tutDone ? '1' : '0'); } catch (e) {}
 }
 function showTutIntro() {
   tutIntro.classList.remove('off');
@@ -1086,14 +1393,14 @@ const TUT_CFG = {
 };
 let menuCoinEl = null;
 function updateCoinUI() {
-  const shown = shopState.coins + (run ? pendingCoins : 0);
+  const shown = isDeveloper() ? '∞' : shopState.coins + (run ? pendingCoins : 0);
   coinHud.textContent = shown;
   shopCoins.textContent = shown;
   upgradeCoins.textContent = shown;
   itemCoins.textContent = shown;
   if (!menuCoinEl) menuCoinEl = menuShopBtn.querySelector('.coin');
   menuCoinEl.textContent = shown;
-  endCoinsEl.textContent = shopState.coins;
+  endCoinsEl.textContent = coinText(shopState.coins);
 }
 function setShopMessage(message, error = false) {
   shopStatus.textContent = message;
@@ -1112,14 +1419,14 @@ function setUpgradeMessage(message, error = false) {
 function buyItem(id) {
   const it = ACTIVE_ITEM_MAP.get(id);
   if (!it || !shopStorageOK) return;
-  if (shopState.coins < it.price) {
+  if (!canAfford(it.price)) {
     setItemMessage('金币不足：还差 ' + (it.price - shopState.coins) + ' 金币', true);
     return;
   }
-  const next = { ...shopState, coins: shopState.coins - it.price, items: { ...shopState.items, [id]: shopState.items[id] + 1 } };
+  const next = { ...shopState, coins: coinsAfterPurchase(it.price), items: { ...shopState.items, [id]: shopState.items[id] + 1 } };
   if (!saveShopState(next)) { setItemMessage('购买未保存，请检查本地存储', true); return; }
   shopState = next;
-  updateCoinUI(); renderItemShop();
+  updateCoinUI(); renderItemShop(); renderLoadout();
   setItemMessage('已购买「' + it.name + '」 ×1，背包现有 ' + shopState.items[id] + ' 个');
 }
 // ===== 被动升级 =====
@@ -1130,11 +1437,11 @@ function buyUpgrade(id) {
   const lv = shopState.passives[p.id];
   if (lv >= p.max) return;
   const price = passivePrice(p);
-  if (shopState.coins < price) {
+  if (!canAfford(price)) {
     setUpgradeMessage('金币不足：还差 ' + (price - shopState.coins) + ' 金币', true);
     return;
   }
-  const next = { ...shopState, coins: shopState.coins - price, passives: { ...shopState.passives, [id]: lv + 1 } };
+  const next = { ...shopState, coins: coinsAfterPurchase(price), passives: { ...shopState.passives, [id]: lv + 1 } };
   if (!saveShopState(next)) { setUpgradeMessage('升级未保存，请检查本地存储', true); return; }
   shopState = next;
   updateCoinUI(); renderUpgradeShop();
@@ -1142,26 +1449,264 @@ function buyUpgrade(id) {
 }
 // ===== 携带槽 =====
 function toggleLoadout(id) {
+  const it = ACTIVE_ITEM_MAP.get(id);
+  if (!it || !shopStorageOK) return;
   const idx = loadout.indexOf(id);
   if (idx >= 0) {
     loadout.splice(idx, 1);
   } else {
     if (loadout.length >= 2) { setItemMessage('最多携带 2 个道具，先点击下方槽位卸下', true); return; }
-    if (shopState.items[id] < 1) { setItemMessage('背包里还没有「' + ACTIVE_ITEM_MAP.get(id).name + '」，先购买', true); return; }
+    if (shopState.items[id] < 1) { setItemMessage('背包里还没有「' + it.name + '」，先购买', true); return; }
     loadout.push(id);
   }
   renderLoadout();
+  renderItemShop();
   setItemMessage(loadout.length ? '已选择携带：' + loadout.map(i => ACTIVE_ITEM_MAP.get(i).name).join('、') : '未选择携带道具');
 }
-loadProgress();
-loadShopState();
-loadHistory();
-loadTutFlag();
-loadDaily();
-loadSettings();
-updateCoinUI();
-// 按存档应用窗口大小/全屏（仅打包环境有 neonAPI）
-if (window.neonAPI) applyWindowSettings();
+function normalizeAccounts(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(a => a && typeof a.id === 'string' && typeof a.name === 'string' && typeof a.passHash === 'string' && (a.role === 'user' || a.role === 'developer'))
+    .map(a => ({
+      id: a.id,
+      name: a.name.trim().slice(0, 16),
+      passHash: a.passHash,
+      role: a.role,
+      createdAt: Number.isFinite(+a.createdAt) ? +a.createdAt : Date.now()
+    }))
+    .filter(a => a.id && a.name);
+}
+function loadAccounts() {
+  try { accounts = normalizeAccounts(JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]')); }
+  catch (e) { accounts = []; }
+}
+function saveAccounts() {
+  try { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); } catch (e) {}
+}
+function createAccountId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+  return 'user-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+function accountNameKey(name) {
+  return name.trim().toLocaleLowerCase();
+}
+function developerKeyId(key) {
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+function usedDeveloperKeys() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DEVELOPER_KEYS_USED_KEY) || '[]');
+    return Array.isArray(raw) ? raw.filter(id => typeof id === 'string') : [];
+  } catch (e) {
+    return [];
+  }
+}
+function consumeDeveloperKey(key) {
+  const id = developerKeyId(key);
+  const used = usedDeveloperKeys();
+  if (used.includes(id)) return false;
+  try { localStorage.setItem(DEVELOPER_KEYS_USED_KEY, JSON.stringify([...used, id])); }
+  catch (e) { return false; }
+  return true;
+}
+function setAuthMessage(message, error = false) {
+  authMsg.textContent = message;
+  authMsg.classList.toggle('error', error);
+}
+function resetDeveloperPrompt() {
+  authDevKeyWrap.classList.add('off');
+  authDevKey.value = '';
+  authDevBtn.textContent = '开发者模式 · 需要密钥';
+}
+function setAuthMode(mode) {
+  authMode = mode === 'register' ? 'register' : 'login';
+  const registering = authMode === 'register';
+  authLoginTab.classList.toggle('on', !registering);
+  authRegisterTab.classList.toggle('on', registering);
+  authLoginTab.setAttribute('aria-selected', String(!registering));
+  authRegisterTab.setAttribute('aria-selected', String(registering));
+  authConfirmWrap.classList.toggle('off', !registering);
+  authPass.autocomplete = registering ? 'new-password' : 'current-password';
+  authSubmit.textContent = registering ? '注册并进入游戏' : '登录';
+  authTitle.textContent = registering ? '创建本地账号' : '霓虹跑酷';
+  resetDeveloperPrompt();
+  setAuthMessage(registering ? '普通用户初始 0 金币' : '普通用户初始 0 金币');
+}
+function showAuth(message = '') {
+  menuEl.classList.add('off');
+  authLayer.classList.remove('off');
+  if (message) setAuthMessage(message);
+  authName.focus();
+}
+function closeGameDialogs() {
+  DIALOGS.forEach(dialog => { if (dialog.open) dialog.close(); });
+}
+async function passwordHash(password) {
+  const source = 'neon-run-local-v2|' + password;
+  if (window.crypto && window.crypto.subtle) {
+    try {
+      const bytes = new TextEncoder().encode(source);
+      const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+      return 'sha256:' + [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('');
+    } catch (e) { /* 回退到本地散列 */ }
+  }
+  let hash = 2166136261;
+  for (let i = 0; i < source.length; i++) {
+    hash ^= source.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return 'fnv:' + (hash >>> 0).toString(16);
+}
+function activateAccount(account) {
+  currentUser = { id: account.id, name: account.name, role: account.role };
+  try { localStorage.setItem(SESSION_KEY, account.id); } catch (e) {}
+  run = 0; paused = 0; pendingCoins = 0; score = 0; level = 1;
+  loadout = []; activeLoadout = []; itemsUsed = []; tutorialMode = false; introShown = false;
+  closeGameDialogs();
+  end.classList.add('off');
+  pauseLayer.classList.add('off');
+  hudItems.textContent = '';
+  hudBuffs.textContent = '';
+  loadProgress();
+  loadShopState(account.role === 'developer' ? 10000 : 0);
+  loadHistory();
+  loadTutFlag();
+  loadSettings();
+  updateCoinUI();
+  if (window.neonAPI) applyWindowSettings();
+  authLayer.classList.add('off');
+  authPass.value = '';
+  authPass2.value = '';
+  resetDeveloperPrompt();
+  menu();
+}
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  const name = authName.value.trim();
+  const password = authPass.value;
+  if (name.length < 2 || name.length > 16) {
+    setAuthMessage('用户名需为 2-16 个字符', true);
+    authName.focus();
+    return;
+  }
+  if (password.length < 4) {
+    setAuthMessage('密码至少需要 4 个字符', true);
+    authPass.focus();
+    return;
+  }
+  if (authMode === 'register' && password !== authPass2.value) {
+    setAuthMessage('两次输入的密码不一致', true);
+    authPass2.focus();
+    return;
+  }
+  loadAccounts();
+  const duplicate = accounts.find(account => accountNameKey(account.name) === accountNameKey(name));
+  if (authMode === 'register') {
+    if (duplicate) {
+      setAuthMessage('该用户名已存在，请直接登录', true);
+      return;
+    }
+    const account = {
+      id: createAccountId(), name, passHash: await passwordHash(password),
+      role: 'user', createdAt: Date.now()
+    };
+    accounts.push(account);
+    saveAccounts();
+    activateAccount(account);
+    return;
+  }
+  if (!duplicate || duplicate.role === 'developer' || duplicate.passHash !== await passwordHash(password)) {
+    setAuthMessage('用户名或密码错误', true);
+    return;
+  }
+  activateAccount(duplicate);
+}
+function enterDeveloperMode() {
+  loadAccounts();
+  let account = accounts.find(item => item.role === 'developer' && item.id === 'developer-local');
+  if (!account) {
+    account = {
+      id: 'developer-local', name: '开发者', passHash: '', role: 'developer',
+      createdAt: Date.now()
+    };
+    accounts.push(account);
+    saveAccounts();
+  }
+  activateAccount(account);
+}
+function requestDeveloperAccess() {
+  if (authDevKeyWrap.classList.contains('off')) {
+    authDevKeyWrap.classList.remove('off');
+    authDevBtn.textContent = '验证并进入';
+    setAuthMessage('请输入开发者密钥，每个密钥仅可使用一次');
+    authDevKey.focus();
+    return;
+  }
+  const key = authDevKey.value.trim();
+  if (!DEVELOPER_KEYS.has(key)) {
+    authDevKey.value = '';
+    setAuthMessage('开发者密钥无效', true);
+    authDevKey.focus();
+    return;
+  }
+  if (!consumeDeveloperKey(key)) {
+    authDevKey.value = '';
+    setAuthMessage('该开发者密钥已使用', true);
+    authDevKey.focus();
+    return;
+  }
+  enterDeveloperMode();
+}
+function logout() {
+  bankPendingCoins();
+  currentUser = null;
+  localStorage.removeItem(SESSION_KEY);
+  run = 0; paused = 0; pendingCoins = 0;
+  loadout = []; activeLoadout = []; itemsUsed = [];
+  closeGameDialogs();
+  menuEl.classList.add('off');
+  end.classList.add('off');
+  pauseLayer.classList.add('off');
+  hudItems.textContent = '';
+  hudBuffs.textContent = '';
+  authName.value = '';
+  authPass.value = '';
+  authPass2.value = '';
+  setAuthMode('login');
+  showAuth('已退出登录，请登录其他账号');
+}
+function restoreSession() {
+  loadAccounts();
+  let sessionId = null;
+  try { sessionId = localStorage.getItem(SESSION_KEY); } catch (e) {}
+  const account = accounts.find(item => item.id === sessionId);
+  if (account) activateAccount(account);
+  else {
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+    showAuth();
+  }
+}
+shopState = normalizeShopState(null);
+progress = { global: 0, byLevel: {} };
+history = [];
+
+authLoginTab.onclick = () => setAuthMode('login');
+authRegisterTab.onclick = () => setAuthMode('register');
+authForm.addEventListener('submit', event => {
+  handleAuthSubmit(event).catch(() => setAuthMessage('账号操作失败，请重试', true));
+});
+authDevBtn.onclick = requestDeveloperAccess;
+authDevKey.addEventListener('keydown', event => {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  requestDeveloperAccess();
+});
+logoutBtn.onclick = logout;
+setAuthMode('login');
 
 // 太空背景预生成星点（随窗口尺寸重建，避免每帧随机分配）
 function buildSpaceStars() {
@@ -1197,6 +1742,7 @@ function gy() { return H * GY_RATIO; }
 // ===== 输入 =====
 addEventListener('keydown', e => {
   ensureAudio();   // 键盘操作同样解锁音频
+  if (!currentUser || !authLayer.classList.contains('off')) return;
   if (anyDialogOpen()) return;
   if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
     e.preventDefault();
@@ -1260,11 +1806,11 @@ function purchaseCostume(id) {
   const item = findCostume(id);
   if (!item || shopState.owned.includes(id)) return;
   if (!shopStorageOK) { setShopMessage('存档不可用，暂时无法购买', true); return; }
-  if (shopState.coins < item.price) {
+  if (!canAfford(item.price)) {
     setShopMessage('还差 ' + (item.price - shopState.coins) + ' 金币才能购买「' + item.name + '」');
     return;
   }
-  const next = { ...shopState, coins: shopState.coins - item.price, owned: [...shopState.owned, id], equipped: id };
+  const next = { ...shopState, coins: coinsAfterPurchase(item.price), owned: [...shopState.owned, id], equipped: id };
   if (!saveShopState(next)) { setShopMessage('购买未保存，请检查本地存储后重试', true); return; }
   shopState = next;
   updateCoinUI();
@@ -1307,7 +1853,7 @@ function renderShop() {
     if (equipped) { action.textContent = '已装备'; action.disabled = true; }
     else if (owned) { action.textContent = '装备'; action.onclick = () => equipCostume(item.id); }
     else {
-      action.textContent = shopState.coins >= item.price ? '购买 · ' + item.price : '还差 ' + (item.price - shopState.coins);
+      action.textContent = canAfford(item.price) ? '购买 · ' + item.price : '还差 ' + (item.price - shopState.coins);
       action.disabled = !shopStorageOK;
       action.onclick = () => purchaseCostume(item.id);
     }
@@ -1348,13 +1894,17 @@ function lvName(lv) { return LEVELS[lv - 1].title; }
 // 局内金币入账：仅在结算/重开/退出时落盘一次
 function bankPendingCoins() {
   if (pendingCoins > 0) {
-    shopState.coins = Math.min(Number.MAX_SAFE_INTEGER, shopState.coins + pendingCoins);
+    if (!isDeveloper()) shopState.coins = Math.min(Number.MAX_SAFE_INTEGER, shopState.coins + pendingCoins);
     pendingCoins = 0;
     saveShopState();
   }
 }
 function menu() {
   bankPendingCoins();
+  accountName.textContent = currentUser ? currentUser.name : '未登录';
+  accountRole.textContent = currentUser && currentUser.role === 'developer' ? '开发者模式' : '普通用户';
+  activeLoadout = [];
+  loadout = loadout.filter(id => ACTIVE_ITEM_MAP.has(id) && shopState.items[id] > 0).slice(0, 2);
   // 退出教程模式（返回菜单后按正常关卡渲染）
   tutorialMode = false;
   if (level === 0) level = 1;   // 教程用 level=0，回菜单恢复第 1 关
@@ -1402,7 +1952,7 @@ function renderLevelCards() {
   tutCard.onclick = () => { hideTutIntro(); tutorialStart(); };
   lvGrid.append(tutCard);
   LEVELS.forEach((L) => {
-    const unlocked = best >= L.unlock;
+    const unlocked = isDeveloper() || best >= L.unlock;
     const card = document.createElement('button');
     card.className = 'lv-card ' + (unlocked ? 'unlocked' : 'locked') + (level === L.id ? ' selected' : '');
     card.type = 'button';
@@ -1448,16 +1998,29 @@ function renderItemShop() {
   itemGrid.textContent = '';
   ACTIVE_ITEMS.forEach(it => {
     const card = document.createElement('div');
-    card.className = 'item-card';
     const owned = shopState.items[it.id];
+    const selected = loadout.includes(it.id);
+    const slotsFull = loadout.length >= 2 && !selected;
+    const carryText = selected ? '已携带' : slotsFull ? '槽位已满' : owned > 0 ? '携带' : '无库存';
+    card.className = 'item-card backpack-item' + (selected ? ' selected' : '');
     card.innerHTML =
       '<div class="item-ic" aria-hidden="true">' + it.icon + '</div>' +
       '<h3>' + it.name + '</h3>' +
       '<p>' + it.desc + '</p>' +
-      '<div class="owned">拥有 ' + owned + '</div>' +
-      '<button class="buy" data-buy="' + it.id + '">' + (shopState.coins >= it.price ? '购买 · ' + it.price : '差 ' + (it.price - shopState.coins)) + '</button>';
-    card.querySelector('[data-buy]').onclick = () => buyItem(it.id);
-    card.querySelector('[data-buy]').disabled = !shopStorageOK;
+      '<div class="owned">库存 <b>' + owned + '</b></div>' +
+      '<div class="item-actions">' +
+        '<button class="buy" data-buy="' + it.id + '">' + (canAfford(it.price) ? '购买 · ' + it.price : '差 ' + (it.price - shopState.coins)) + '</button>' +
+        '<button class="carry' + (selected ? ' on' : '') + '" data-carry="' + it.id + '" aria-pressed="' + selected + '">' + carryText + '</button>' +
+      '</div>';
+    const buyBtn = card.querySelector('[data-buy]');
+    const carryBtn = card.querySelector('[data-carry]');
+    buyBtn.onclick = () => buyItem(it.id);
+    buyBtn.disabled = !shopStorageOK;
+    carryBtn.onclick = () => toggleLoadout(it.id);
+    carryBtn.disabled = !shopStorageOK || (!selected && (owned < 1 || slotsFull));
+    if (slotsFull) carryBtn.title = '先卸下一件已携带道具';
+    else if (owned < 1) carryBtn.title = '购买后才能携带';
+    else carryBtn.title = selected ? '点击卸下' : '放入空槽';
     itemGrid.append(card);
   });
   updateCoinUI();
@@ -1466,9 +2029,10 @@ function renderLoadout() {
   const slots = [loadoutSlot1, loadoutSlot2];
   slots.forEach((slot, i) => {
     const id = loadout[i];
-    slot.textContent = id ? ACTIVE_ITEM_MAP.get(id).icon : '';
+    slot.innerHTML = (id ? ACTIVE_ITEM_MAP.get(id).icon : '<span class="empty">+</span>') + '<small>槽 ' + (i + 1) + '</small>';
     slot.classList.toggle('fill', !!id);
     slot.title = id ? '「' + ACTIVE_ITEM_MAP.get(id).name + '」点击卸下' : '空槽';
+    slot.setAttribute('aria-label', id ? '槽 ' + (i + 1) + '：' + ACTIVE_ITEM_MAP.get(id).name + '，点击卸下' : '槽 ' + (i + 1) + '：空');
   });
   loadoutCount.textContent = loadout.length;
   renderLoadoutHint();
@@ -1494,7 +2058,7 @@ function renderUpgradeShop() {
       '<h3>' + p.name + ' <small style="color:#ffd94a">Lv.' + lv + (maxed ? '（满）' : '/' + p.max) + '</small></h3>' +
       '<p>' + p.desc(Math.max(1, lv)) + '</p>' +
       '<div class="owned">' + (maxed ? '已满级' : '下一级 ' + p.desc(lv + 1)) + '</div>' +
-      '<button class="buy" data-up="' + p.id + '">' + (maxed ? '已满级' : shopState.coins >= price ? '升级 · ' + price : '差 ' + (price - shopState.coins)) + '</button>';
+      '<button class="buy" data-up="' + p.id + '">' + (maxed ? '已满级' : canAfford(price) ? '升级 · ' + price : '差 ' + (price - shopState.coins)) + '</button>';
     const btn = card.querySelector('[data-up]');
     btn.disabled = maxed || !shopStorageOK;
     btn.onclick = () => buyUpgrade(p.id);
@@ -1595,21 +2159,21 @@ function start() {
   const c = cfg();
   if (tutorialMode) {
     // 教程：不消耗背包道具、不吃被动增益、无疯狗，低速起跑
-    loadout = [];
     tutHint.innerHTML = TUT_HINTS[0];
     tutHint.classList.remove('off');
     speed = 6;
   }
-  // 道具：扣除背包（携带即消耗）；库存不足的自动移出携带
-  loadout = loadout.filter(id => shopState.items[id] > 0);
-  loadout.forEach(id => {
+  // 道具：库存不足的自动移出下一局选择；当前局单独记录并扣除库存
+  loadout = loadout.filter(id => ACTIVE_ITEM_MAP.has(id) && shopState.items[id] > 0).slice(0, 2);
+  activeLoadout = tutorialMode ? [] : loadout.slice();
+  activeLoadout.forEach(id => {
     shopState.items = { ...shopState.items, [id]: shopState.items[id] - 1 };
   });
   saveShopState();
   renderHudItems();
   buffs = {};
   // 携带的自动型道具开局生效
-  loadout.forEach(id => {
+  activeLoadout.forEach(id => {
     if (id === 'shield') buffs.shield = 1;
     else if (id === 'revive') buffs.revive = 1;
     else if (id === 'magnet') buffs.magnet = 20 * 60;
@@ -1646,7 +2210,7 @@ document.querySelector('#quitBtn').onclick = () => { togglePause(); menu(); };
 document.querySelector('#side1Btn').onclick = () => { side = 1; renderSideBtns(); };
 document.querySelector('#side2Btn').onclick = () => { side = -1; renderSideBtns(); };
 startBtn.onclick = () => {
-  if (best < cfg().unlock) return;
+  if (!isDeveloper() && best < cfg().unlock) return;
   start();
 };
 menuItemsBtn.onclick = () => openItemShop();
@@ -1676,6 +2240,7 @@ fsBtn.onclick = toggleFullscreen;
 volSlider.addEventListener('input', () => setVolume(+volSlider.value / 100));
 muteBtn.onclick = toggleMute;
 sfxTestBtn.onclick = () => { ensureAudio(); playSfx('finish'); };
+initUpdateSystem();
 // 新手教程入口
 document.querySelector('#tutGoBtn').onclick = () => { hideTutIntro(); tutorialStart(); };
 document.querySelector('#tutSkipBtn').onclick = () => { hideTutIntro(); };
@@ -1849,7 +2414,15 @@ function updateDogs(dt) {
     }
   }
 }
-function hitByDog() {
+function hitByDog(dog) {
+  if (isDeveloper()) {
+    if (dog) {
+      dog.mode = 'recover';
+      dog.ret = Math.max(dog.ret || 0, dog.lungeV * 0.8 || 120);
+    }
+    addFloat(px(), gy() - py - 86, '开发者无敌', '#ffd94a', 0.8);
+    return;
+  }
   if (buffs.invincible > 0 || buffs.shield > 0) {
     if (buffs.shield > 0) {
       buffs.shield = 0;
@@ -2061,7 +2634,9 @@ function loop(t) {
     }
   }
   if (hit && !dying) {
-    if (buffs.invincible > 0 || buffs.shield > 0) {
+    if (isDeveloper()) {
+      hit = false;
+    } else if (buffs.invincible > 0 || buffs.shield > 0) {
       if (buffs.shield > 0) {
         buffs.shield = 0;
         playSfx('shield');
@@ -2099,7 +2674,9 @@ function loop(t) {
       const lo = Math.min(s2.x, s2.px), hi = Math.max(s2.x, s2.px) + s2.w;
       if (hi > pxs - 16 && lo < pxs + 24 && py < s2.h - 6) {
         const laser = s2.type === 'laser';
-        if (buffs.invincible > 0 || buffs.shield > 0) {
+        if (isDeveloper()) {
+          break;
+        } else if (buffs.invincible > 0 || buffs.shield > 0) {
           if (buffs.shield > 0) {
             buffs.shield = 0;
             playSfx('shield');
@@ -2836,7 +3413,7 @@ function drawSweep(s2, ground, c, t) {
 }
 function renderHudItems() {
   hudItems.textContent = '';
-  loadout.forEach((id, i) => {
+  activeLoadout.forEach((id, i) => {
     const it = ACTIVE_ITEM_MAP.get(id);
     const b = document.createElement('button');
     b.className = 'hud-item';
@@ -2854,6 +3431,7 @@ function renderHudItems() {
 let lastBuffsKey = '';
 function renderHudBuffs(force = false) {
   const rows = [];
+  if (isDeveloper() && run) rows.push(['developer', '开发者无敌', '#ffd94a', '']);
   if (buffs.shield > 0) rows.push(['shield', '护盾', '#4fe3ff', '']);
   if (buffs.invincible > 0) rows.push(['inv', '无敌 ' + Math.ceil(buffs.invincible / 60) + 's', '#fff3ad', '']);
   if (buffs.magnet > 0) rows.push(['magnet', '磁铁 ' + Math.ceil(buffs.magnet / 60) + 's', '#ff8c42', '']);
@@ -2884,7 +3462,7 @@ function renderHudBuffs(force = false) {
 }
 function useLoadoutItem(idx) {
   if (!run || paused || dying) return;
-  const id = loadout[idx];
+  const id = activeLoadout[idx];
   if (!id) return;
   const it = ACTIVE_ITEM_MAP.get(id);
   if (it.auto) return;   // 自动型不可手动触发
@@ -2920,7 +3498,7 @@ function useLoadoutItem(idx) {
     spawnRing(px(), gy() - py - 20, '#ff8c42');
     spawnBurst(px(), gy() - py - 40, '#ff8c42', 22, 5);
   }
-  // 自动型护盾/磁铁/复活开局即为激活态（start 时依据 loadout 设定）
+  // 自动型护盾/磁铁/复活开局即为激活态（start 时依据 activeLoadout 设定）
   renderHudItems();
 }
 
@@ -3049,6 +3627,44 @@ function drawRunnerBase(ctx, pose) {
   ctx.fill();
   ctx.restore();
 }
+function drawRunnerReference(ctx, pose) {
+  let sprite, crop, source, anchorX, anchorY;
+  if (pose.color === C_GREEN) {
+    const airborne = pose.air && whyJumpReferenceSprite;
+    sprite = airborne ? whyJumpReferenceSprite : whyReferenceSprite;
+    crop = airborne ? WHY_JUMP_REFERENCE_CROP : WHY_REFERENCE_CROP;
+    source = airborne ? whyJumpReference : whyReference;
+    anchorX = airborne ? 420 : crop.w / 2;
+    anchorY = airborne ? 635 : crop.h;
+  } else if (pose.color === C_PINK) {
+    const airborne = pose.air && qiuJumpReferenceSprite;
+    sprite = airborne ? qiuJumpReferenceSprite : qiuReferenceSprite;
+    crop = airborne ? QIU_JUMP_REFERENCE_CROP : QIU_REFERENCE_CROP;
+    source = airborne ? qiuJumpReference : qiuReference;
+    anchorX = airborne ? 521 : crop.w / 2;
+    anchorY = airborne ? 730 : crop.h;
+  }
+  if (!sprite) return false;
+  const original = sprite === source;
+  const spriteScale = 132 / crop.h;
+  const spriteWidth = crop.w * spriteScale;
+  ctx.save();
+  ctx.translate(pose.xx, pose.yy);
+  ctx.scale(pose.dir, 1);
+  if (original) ctx.globalCompositeOperation = 'screen';
+  ctx.drawImage(
+    sprite,
+    original ? crop.x : 0,
+    original ? crop.y : 0,
+    crop.w, crop.h,
+    -anchorX * spriteScale,
+    -anchorY * spriteScale,
+    spriteWidth,
+    132
+  );
+  ctx.restore();
+  return true;
+}
 function drawCostumeFront(ctx, pose, id, t) {
   if (!id) return;
   const offsetY = ['goggles', 'cat_ears', 'headphones', 'crown', 'helmet'].includes(id) ? -50 : -33;
@@ -3090,7 +3706,7 @@ function drawCostumeFront(ctx, pose, id, t) {
 function drawCostumedRunner(ctx, xx, yy, t, costumeId, dir, color, air) {
   const pose = buildRunnerPose(xx, yy, t, dir, color, air);
   drawCostumeBack(ctx, pose, costumeId, t);
-  drawRunnerBase(ctx, pose);
+  if (!drawRunnerReference(ctx, pose)) drawRunnerBase(ctx, pose);
   drawCostumeFront(ctx, pose, costumeId, t);
 }
 function drawCostumePreview(canvas, costumeId) {
@@ -3187,12 +3803,13 @@ function finish() {
   end.classList.remove('off');
 }
 
-menu();
+restoreSession();
 
 // HTML 内联按钮(onclick=...)需要全局可见
 window.menu = menu;
 window.restart = restart;
 window.finish = finish;
+window.logout = logout;
 // 兜底：直接关窗/刷新前把本局金币入账，避免丢失
 addEventListener('beforeunload', bankPendingCoins);
 })();

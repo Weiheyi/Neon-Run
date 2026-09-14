@@ -1,7 +1,7 @@
 {
   "name": "neon-run-pc",
   "productName": "霓虹跑酷",
-  "version": "1.7.0",
+  "version": "1.9.2",
   "description": "霓虹跑酷 - PC 版桌面游戏",
   "main": "main.js",
   "author": "NeonRun",
@@ -46,6 +46,7 @@
       "artifactName": "NeonRun-${version}-${arch}.${ext}"
     },
     "win": {
+      "icon": "app/icon.ico",
       "target": [
         {
           "target": "portable",

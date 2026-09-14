@@ -3,6 +3,11 @@ dist/
 dist-mac/
 *.log
 *.png
+!app/why-character-reference.png
+!app/qiu-character-reference.png
+!app/qiu-character-jump-reference.png
+*.jpg
+!app/why-character-jump-reference.jpg
 .DS_Store
 .commandcode/
 mac-src/
