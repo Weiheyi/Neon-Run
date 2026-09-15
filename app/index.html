@@ -200,7 +200,7 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
         <span class="pc-chip gold">Offline</span>
       </div>
     </aside>
-    <form id="authForm" class="auth-card">
+    <form id="authForm" class="auth-card" autocomplete="off">
       <h1 id="authTitle">霓虹跑酷</h1>
       <p>本地账号数据仅保存在这台设备上</p>
       <div class="auth-tabs" role="tablist">
@@ -208,16 +208,16 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
         <button type="button" id="authRegisterTab" aria-selected="false">注册</button>
       </div>
       <label class="auth-field">用户名
-        <input id="authName" name="username" maxlength="16" autocomplete="username" placeholder="2-16 个字符">
+        <input id="authName" name="neon-account" maxlength="16" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other" placeholder="2-16 个字符">
       </label>
       <label class="auth-field">密码
-        <input id="authPass" name="password" type="password" maxlength="32" autocomplete="current-password" placeholder="至少 4 个字符">
+        <input id="authPass" name="neon-secret" type="password" maxlength="32" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other" placeholder="至少 4 个字符">
       </label>
       <label class="auth-field off" id="authConfirmWrap">确认密码
-        <input id="authPass2" type="password" maxlength="32" autocomplete="new-password" placeholder="再次输入密码">
+        <input id="authPass2" name="neon-secret-confirm" type="password" maxlength="32" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other" placeholder="再次输入密码">
       </label>
       <label class="auth-field off" id="authDevKeyWrap">开发者密钥
-        <input id="authDevKey" type="password" maxlength="32" autocomplete="off" placeholder="输入开发者密钥">
+        <input id="authDevKey" name="neon-devkey" type="password" maxlength="32" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other" placeholder="输入开发者密钥">
       </label>
       <p id="authMsg" class="auth-msg" role="status" aria-live="polite">普通用户初始 0 金币</p>
       <button id="authSubmit" type="submit" class="auth-submit">登录</button>
@@ -1530,7 +1530,6 @@ function setAuthMode(mode) {
   authLoginTab.setAttribute('aria-selected', String(!registering));
   authRegisterTab.setAttribute('aria-selected', String(registering));
   authConfirmWrap.classList.toggle('off', !registering);
-  authPass.autocomplete = registering ? 'new-password' : 'current-password';
   authSubmit.textContent = registering ? '注册并进入游戏' : '登录';
   authTitle.textContent = registering ? '创建本地账号' : '霓虹跑酷';
   resetDeveloperPrompt();
@@ -1540,7 +1539,7 @@ function showAuth(message = '') {
   menuEl.classList.add('off');
   authLayer.classList.remove('off');
   if (message) setAuthMessage(message);
-  authName.focus();
+  authName.focus({ preventScroll: true });
 }
 function closeGameDialogs() {
   DIALOGS.forEach(dialog => { if (dialog.open) dialog.close(); });
@@ -1590,17 +1589,17 @@ async function handleAuthSubmit(event) {
   const password = authPass.value;
   if (name.length < 2 || name.length > 16) {
     setAuthMessage('用户名需为 2-16 个字符', true);
-    authName.focus();
+    authName.focus({ preventScroll: true });
     return;
   }
   if (password.length < 4) {
     setAuthMessage('密码至少需要 4 个字符', true);
-    authPass.focus();
+    authPass.focus({ preventScroll: true });
     return;
   }
   if (authMode === 'register' && password !== authPass2.value) {
     setAuthMessage('两次输入的密码不一致', true);
-    authPass2.focus();
+    authPass2.focus({ preventScroll: true });
     return;
   }
   loadAccounts();
@@ -1643,20 +1642,20 @@ function requestDeveloperAccess() {
     authDevKeyWrap.classList.remove('off');
     authDevBtn.textContent = '验证并进入';
     setAuthMessage('请输入开发者密钥，每个密钥仅可使用一次');
-    authDevKey.focus();
+    authDevKey.focus({ preventScroll: true });
     return;
   }
   const key = authDevKey.value.trim();
   if (!DEVELOPER_KEYS.has(key)) {
     authDevKey.value = '';
     setAuthMessage('开发者密钥无效', true);
-    authDevKey.focus();
+    authDevKey.focus({ preventScroll: true });
     return;
   }
   if (!consumeDeveloperKey(key)) {
     authDevKey.value = '';
     setAuthMessage('该开发者密钥已使用', true);
-    authDevKey.focus();
+    authDevKey.focus({ preventScroll: true });
     return;
   }
   enterDeveloperMode();
@@ -1706,6 +1705,15 @@ authDevKey.addEventListener('keydown', event => {
   requestDeveloperAccess();
 });
 logoutBtn.onclick = logout;
+
+// 浏览器会忽略密码框上的 autocomplete="off"，仍会弹出密码管理器遮挡登录界面。
+// 支持 -webkit-text-security 时改用文本输入 + CSS 遮蔽，从根上关闭密码填充与保存提示。
+if (window.CSS && typeof CSS.supports === 'function' && CSS.supports('-webkit-text-security', 'disc')) {
+  [authPass, authPass2, authDevKey].forEach(input => {
+    input.type = 'text';
+    input.classList.add('masked');
+  });
+}
 setAuthMode('login');
 
 // 太空背景预生成星点（随窗口尺寸重建，避免每帧随机分配）

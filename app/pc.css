@@ -166,8 +166,11 @@ body.custom-frame #tutHint {
 /* ===== Login shell ===== */
 .auth-layer {
   display: grid;
-  place-items: center;
+  justify-items: center;
+  align-items: safe center;
   padding: 32px;
+  overflow: auto;
+  overscroll-behavior: contain;
   background:
     linear-gradient(90deg, rgba(5, 3, 15, 0.96), rgba(5, 3, 15, 0.86)),
     repeating-linear-gradient(90deg, rgba(82, 245, 255, 0.045) 0 1px, transparent 1px 68px);
@@ -344,7 +347,7 @@ body.custom-frame #tutHint {
 
 .auth-card {
   width: 100%;
-  min-height: 100%;
+  min-height: 0;
   padding: 30px;
   border: 0;
   border-radius: 0;
@@ -398,6 +401,11 @@ body.custom-frame #tutHint {
 .auth-field input:focus {
   border-color: var(--pc-cyan);
   box-shadow: 0 0 0 3px rgba(82, 245, 255, 0.13);
+}
+
+/* 用文本输入模拟密码框，避免浏览器弹出密码管理器遮挡界面 */
+.auth-field input.masked {
+  -webkit-text-security: disc;
 }
 
 .auth-submit,
@@ -754,8 +762,14 @@ dialog {
     min-height: 0;
   }
 
+  .auth-card {
+    order: 1;
+  }
+
   .auth-visual {
-    min-height: 220px;
+    order: 2;
+    min-height: 0;
+    padding: 20px;
     border-right: 0;
     border-bottom: 1px solid rgba(82, 245, 255, 0.18);
   }
