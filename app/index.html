@@ -3514,8 +3514,14 @@ function useLoadoutItem(idx) {
 function buildRunnerPose(xx, yy, t, dir, color, air) {
   const phase = t * 0.02;
   const legSwing = air ? 7 : Math.sin(phase * 2) * 15;
+  // 跑动节奏：贴图只有单帧，用刚体动画表现（前倾 + 每步起伏 + 腾空拉伸/触地压缩）
+  const step = phase * 0.55;
+  const swing = Math.sin(step);
   return {
     xx, yy, dir, color, air, phase, legSwing,
+    lean: air ? 0 : 0.055 + swing * 0.016,
+    bob: air ? 0 : -Math.abs(swing) * 3.6,
+    squash: air ? 1 : 1 - Math.cos(step * 2) * 0.03,
     sway: Math.cos(phase) * 3,
     headY: yy - 108,
     headR: 24,
@@ -3526,10 +3532,17 @@ function buildRunnerPose(xx, yy, t, dir, color, air) {
     frontFootX: xx - legSwing - 20
   };
 }
+function applyRunnerMotion(ctx, pose, offsetY = 0) {
+  ctx.translate(pose.xx, pose.yy);
+  ctx.rotate(pose.lean);
+  ctx.translate(0, pose.bob);
+  ctx.scale(1, pose.squash);
+  ctx.scale(pose.dir, 1);
+  ctx.translate(0, offsetY);
+}
 function costumeTransform(ctx, pose, draw, offsetY = -30) {
   ctx.save();
-  ctx.translate(pose.xx, pose.yy + offsetY);
-  ctx.scale(pose.dir, 1);
+  applyRunnerMotion(ctx, pose, offsetY);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   draw();
@@ -3656,20 +3669,23 @@ function drawRunnerReference(ctx, pose) {
   const original = sprite === source;
   const spriteScale = 132 / crop.h;
   const spriteWidth = crop.w * spriteScale;
+  const paintSprite = () => {
+    if (original) ctx.globalCompositeOperation = 'screen';
+    ctx.drawImage(
+      sprite,
+      original ? crop.x : 0,
+      original ? crop.y : 0,
+      crop.w, crop.h,
+      -anchorX * spriteScale,
+      -anchorY * spriteScale,
+      spriteWidth,
+      132
+    );
+    if (original) ctx.globalCompositeOperation = 'source-over';
+  };
   ctx.save();
-  ctx.translate(pose.xx, pose.yy);
-  ctx.scale(pose.dir, 1);
-  if (original) ctx.globalCompositeOperation = 'screen';
-  ctx.drawImage(
-    sprite,
-    original ? crop.x : 0,
-    original ? crop.y : 0,
-    crop.w, crop.h,
-    -anchorX * spriteScale,
-    -anchorY * spriteScale,
-    spriteWidth,
-    132
-  );
+  applyRunnerMotion(ctx, pose);   // 跑动/腾空的节奏变换，装扮也会跟随
+  paintSprite();
   ctx.restore();
   return true;
 }
