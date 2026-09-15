@@ -630,6 +630,27 @@ whyJumpReference.onload = () => {
     whyJumpReferenceSprite = whyJumpReference;
   }
 };
+// 为何意 跑步动画：参考图里的两个跑步姿势交替播放
+const whyRunFrames = [
+  { src: 'why-character-run-a.png', image: new Image(), sprite: null, crop: null },
+  { src: 'why-character-run-b.png', image: new Image(), sprite: null, crop: null }
+];
+for (const frame of whyRunFrames) {
+  frame.image.onload = () => {
+    frame.crop = { x: 0, y: 0, w: frame.image.naturalWidth, h: frame.image.naturalHeight };
+    try {
+      frame.sprite = createReferenceSprite(
+        frame.image,
+        frame.crop,
+        (r, g, b) => (Math.max(r, g, b) - 10) * 6
+      );
+    } catch (e) {
+      frame.sprite = frame.image;   // 取像素失败时直接贴原图（与其它参考图一致）
+    }
+    if (shopDialog.open) renderShop();
+  };
+  frame.image.src = frame.src;
+}
 const qiuReference = new Image();
 let qiuReferenceSprite = null;
 qiuReference.src = 'qiu-character-reference.png';
@@ -3514,11 +3535,12 @@ function useLoadoutItem(idx) {
 function buildRunnerPose(xx, yy, t, dir, color, air) {
   const phase = t * 0.02;
   const legSwing = air ? 7 : Math.sin(phase * 2) * 15;
-  // 跑动节奏：贴图只有单帧，用刚体动画表现（前倾 + 每步起伏 + 腾空拉伸/触地压缩）
+  // 跑步循环：两帧贴图按步频交替，再叠加前倾 / 每步起伏 / 触地压缩
   const step = phase * 0.55;
   const swing = Math.sin(step);
   return {
     xx, yy, dir, color, air, phase, legSwing,
+    runFrame: swing >= 0 ? 1 : 0,
     lean: air ? 0 : 0.055 + swing * 0.016,
     bob: air ? 0 : -Math.abs(swing) * 3.6,
     squash: air ? 1 : 1 - Math.cos(step * 2) * 0.03,
@@ -3652,11 +3674,28 @@ function drawRunnerReference(ctx, pose) {
   let sprite, crop, source, anchorX, anchorY;
   if (pose.color === C_GREEN) {
     const airborne = pose.air && whyJumpReferenceSprite;
-    sprite = airborne ? whyJumpReferenceSprite : whyReferenceSprite;
-    crop = airborne ? WHY_JUMP_REFERENCE_CROP : WHY_REFERENCE_CROP;
-    source = airborne ? whyJumpReference : whyReference;
-    anchorX = airborne ? 420 : crop.w / 2;
-    anchorY = airborne ? 635 : crop.h;
+    if (airborne) {
+      sprite = whyJumpReferenceSprite;
+      crop = WHY_JUMP_REFERENCE_CROP;
+      source = whyJumpReference;
+      anchorX = 420;
+      anchorY = 635;
+    } else {
+      const frame = whyRunFrames[pose.runFrame] || whyRunFrames[0];
+      if (frame.crop) {
+        sprite = frame.sprite;
+        crop = frame.crop;
+        source = frame.image;
+        anchorX = crop.w / 2;
+        anchorY = crop.h;
+      } else {
+        sprite = whyReferenceSprite;
+        crop = WHY_REFERENCE_CROP;
+        source = whyReference;
+        anchorX = crop.w / 2;
+        anchorY = crop.h;
+      }
+    }
   } else if (pose.color === C_PINK) {
     const airborne = pose.air && qiuJumpReferenceSprite;
     sprite = airborne ? qiuJumpReferenceSprite : qiuReferenceSprite;
