@@ -11,6 +11,15 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 .hud b{color:#52f5ff;font-size:22px}
 .hud .cbox{min-height:22px;font-size:17px;color:#ffd94a}
 .hud .best{font-size:12px;color:#8fa3ff;font-weight:normal}
+/* ===== 生命值 HUD ===== */
+.hud-hp{display:flex;align-items:center;gap:5px;margin:7px 0 4px;height:12px}
+.hp-cell{width:23px;height:10px;transform:skewX(-20deg);border:1px solid #4b3d86;background:linear-gradient(180deg,#241a4d,#150f31);transition:background .2s ease,box-shadow .2s ease,border-color .2s ease}
+.hp-cell.on{border-color:#ff9dc0;background:linear-gradient(180deg,#ff8fb2,#ff2fd6);box-shadow:0 0 12px #ff2fd6aa,inset 0 0 6px #fff6}
+.hud-hp b{margin-left:5px;color:#ffb3c8;font-size:11px;letter-spacing:1px}
+.hud-hp.hurt{animation:hp-hurt .42s ease-out}
+@keyframes hp-hurt{0%{transform:translateX(0) scale(1)}22%{transform:translateX(-5px) scale(1.14)}55%{transform:translateX(4px) scale(1.05)}100%{transform:translateX(0) scale(1)}}
+.hp-demo{display:inline-flex;gap:3px;vertical-align:middle;margin-right:5px}
+.hp-demo i{width:16px;height:8px;transform:skewX(-20deg);border:1px solid #ff9dc0;background:linear-gradient(180deg,#ff8fb2,#ff2fd6);box-shadow:0 0 8px #ff2fd6aa}
 .btn{pointer-events:auto;background:#211449cc;color:#fff;border:1px solid #52f5ff;padding:8px 12px;cursor:pointer;font-size:13px}
 .layer{position:fixed;z-index:4;inset:0;display:grid;place-items:center;background:#060313eF}
 .off{display:none}
@@ -171,7 +180,10 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
   </div>
 </div>
 <div class="hud">
-  <div>NEON RUN<br><small>关卡：<b id="lv">1</b></small><div class="best">纪录 <b id="best">0</b></div></div>
+  <div>NEON RUN<br><small>关卡：<b id="lv">1</b></small>
+    <div class="hud-hp" id="hudHp" role="status" aria-label="生命值"></div>
+    <div class="best">纪录 <b id="best">0</b></div>
+  </div>
   <div style="text-align:right">
     <div>速度 <b id="sp">1.0x</b>　分数 <b id="sc">0</b></div>
     <div>金币 <b id="coinHud" class="coin">0</b></div>
@@ -275,6 +287,7 @@ dialog button{background:#28135a;color:#fff;border:1px solid #846cff;cursor:poin
           <button id="startBtn">▶ 开始挑战</button>
         </div>
         <small><span class="star">●</span> 吃能量球得分，连续吃触发连击倍率；<span style="color:#52f5ff">□ 发光道具盒</span>吃到即时生效（护盾/磁铁/冲刺等）</small>
+        <small><span class="hp-demo"><i></i><i></i><i></i></span> 每局 <b style="color:#ffb3c8">3 点生命</b>：撞上障碍或被咬掉 1 点，随后 1.5 秒无敌可穿过障碍；<span style="color:#ff5d8f">❤ 粉色道具盒</span>可回血，归零才会结束本局</small>
         <small><span style="color:#ff8c42">▲</span> <b style="color:#ff8c42">疯狗</b>从身后追你！它扑来时要<span style="color:#ff8c42">跳起来躲</span>，落地会被咬住；新关有<b style="color:#9d93c8">低重力/沙暴/洋流/陨石</b>等特殊地形</small>
         <small><kbd>空格</kbd><kbd>↑</kbd><kbd>W</kbd> / 点击屏幕 跳跃 · 空中可<span style="color:#ffd94a">二段跳</span> · 长按跳更高</small>
         <small><kbd>1</kbd>-<kbd>5</kbd> 使用道具 · <kbd>P</kbd> 暂停 · <kbd>R</kbd> 快速重开</small>
@@ -453,6 +466,7 @@ const scEl = document.querySelector('#sc');
 const bestEl = document.querySelector('#best');
 const comboBox = document.querySelector('#comboBox');
 const coinHud = document.querySelector('#coinHud');
+const hudHpEl = document.querySelector('#hudHp');
 const authLayer = document.querySelector('#authLayer');
 const authForm = document.querySelector('#authForm');
 const authTitle = document.querySelector('#authTitle');
@@ -571,11 +585,18 @@ const HOLD_G_MUL = 0.72, HOLD_CAP = 10;   // 长按重力系数 / 长按增益�
 const GEM_OFF = [12, 85, 175];           // 贴地 / 低 / 高 能量球离地高度(px)
 const GEM_VAL = [20, 40, 60];
 const GY_RATIO = 0.78;
-// 狗追击参数（帧单位16ms）
-const DOG_CHASE = 250;          // 平时狗在玩家身后距离px（差一点追上）
-const DOG_MIN_CHASE = 210;      // 追击中允许贴近的最小距离（制造压迫感）
-const DOG_WINDUP = 34;          // 扑咬预警时长(帧≈0.55s)
-const DOG_BITE_H = 48;          // 玩家脚离地<此高度且狗到位置 => 被咬
+// 生命值机制（帧单位16ms）
+const HP_BASE = 3;              // 基础生命上限
+const HIT_INVINCIBLE = 1.5;     // 受伤后的无敌秒数（穿越刚撞到的障碍）
+const HIT_SLOW_FRAMES = 22;     // 受伤后的减速帧数（打击感）
+const HIT_SLOW_MUL = 0.62;      // 受伤减速倍率
+const HURT_FLASH_FRAMES = 26;   // 受伤红屏帧数
+// 狗追击参数（帧单位16ms）——整体放宽，给玩家更长的反应窗口
+const DOG_CHASE = 285;          // 平时狗在玩家身后距离px（差一点追上）
+const DOG_MIN_CHASE = 245;      // 追击中允许贴近的最小距离（制造压迫感）
+const DOG_WINDUP = 48;          // 扑咬预警时长(帧≈0.8s，原来0.55s)
+const DOG_BITE_H = 58;          // 玩家脚离地<此高度且狗到位置 => 被咬（放宽起跳判定）
+const DOG_PRESS_MS = 90000;     // 压迫感爬升所需时间(ms)，原来60秒
 // 角色配色：为何意(左→右)=绿，邱家杨(右→左)=粉（各自使用火柴人参考图）
 const C_GREEN = '#00ff80';
 const C_PINK = '#ff2fd6';
@@ -682,11 +703,13 @@ qiuJumpReference.onload = () => {
 // ===== 五关配置 =====
 // type: 'none'基础柱 | 'double'夹缝双层柱 | 'erupt'喷发柱
 // sweep: 独立扁障碍(火球低扫/激光)
+// 难度曲线：maxSpeed 决定封顶跑速；baseGap 是柱间距基数（越大越松）；
+//   double/erupt/sweeps 的 start 为首次出现帧、rate 为每帧触发概率；dogCdMin 越小狗扑得越勤
 const LEVELS = [
   { // 1 霓虹街区 · 新手热身
     id: 1, title: '霓虹街区', subtitle: '悠闲节奏 · 新手热身', icon: '🏙',
-    unlock: 0, maxSpeed: 12, firstDogCd: 520, dogCdMin: 420,
-    baseGap: 80, wideChance: 0, waveGapShrink: 1.8,
+    unlock: 0, maxSpeed: 9, firstDogCd: 720, dogCdMin: 620,
+    baseGap: 120, wideChance: 0, waveGapShrink: 1.0,
     double: { start: Infinity, rate: 0 },
     erupt: { start: Infinity, rate: 0 },
     sweeps: { start: Infinity, rate: 0 },
@@ -703,9 +726,9 @@ const LEVELS = [
   },
   { // 2 电子森林
     id: 2, title: '电子森林', subtitle: '高低夹缝 · 双重陷阱', icon: '🌲',
-    unlock: 10000, maxSpeed: 22, firstDogCd: 460, dogCdMin: 360,
-    baseGap: 70, wideChance: 0.04, waveGapShrink: 2,
-    double: { start: 1400, rate: 0.35 },
+    unlock: 10000, maxSpeed: 16, firstDogCd: 660, dogCdMin: 560,
+    baseGap: 112, wideChance: 0.02, waveGapShrink: 1.2,
+    double: { start: 2600, rate: 0.18 },
     erupt: { start: Infinity, rate: 0 },
     sweeps: { start: Infinity, rate: 0 },
     dogs: 1, dog2At: Infinity, dogColor: '#ffb347',
@@ -721,11 +744,11 @@ const LEVELS = [
   },
   { // 3 熔岩核心
     id: 3, title: '熔岩核心', subtitle: '喷发预警 · 火球横飞', icon: '🌋',
-    unlock: 25000, maxSpeed: 34, firstDogCd: 400, dogCdMin: 300,
-    baseGap: 62, wideChance: 0.07, waveGapShrink: 2.2,
-    double: { start: 1200, rate: 0.3 },
-    erupt: { start: 900, rate: 0.45 },
-    sweeps: { start: 2000, rate: 0.012 },
+    unlock: 25000, maxSpeed: 24, firstDogCd: 620, dogCdMin: 500,
+    baseGap: 104, wideChance: 0.03, waveGapShrink: 1.4,
+    double: { start: 2400, rate: 0.16 },
+    erupt: { start: 2200, rate: 0.20 },
+    sweeps: { start: 3200, rate: 0.006 },
     dogs: 1, dog2At: Infinity, dogColor: '#ffaa00',
     theme: {
       skyTop: '#1c0604', skyBot: '#4a1203', ground: '#6e2400',
@@ -739,10 +762,10 @@ const LEVELS = [
   },
   { // 4 极光冰原
     id: 4, title: '极光冰原', subtitle: '精准三连 · 追击不止', icon: '❄',
-    unlock: 50000, maxSpeed: 48, firstDogCd: 340, dogCdMin: 260,
-    baseGap: 55, wideChance: 0.1, waveGapShrink: 2.4,
-    double: { start: 900, rate: 0.4 },
-    erupt: { start: 1800, rate: 0.22 },
+    unlock: 50000, maxSpeed: 32, firstDogCd: 580, dogCdMin: 460,
+    baseGap: 98, wideChance: 0.05, waveGapShrink: 1.6,
+    double: { start: 2200, rate: 0.20 },
+    erupt: { start: 3000, rate: 0.12 },
     sweeps: { start: Infinity, rate: 0 },
     dogs: 1, dog2At: Infinity, dogColor: '#9adcff',
     theme: {
@@ -757,12 +780,12 @@ const LEVELS = [
   },
   { // 5 数据终章
     id: 5, title: '数据终章', subtitle: '双狗压境 · 激光扫射', icon: '👾',
-    unlock: 100000, maxSpeed: 65, firstDogCd: 300, dogCdMin: 220,
-    baseGap: 50, wideChance: 0.13, waveGapShrink: 2.6,
-    double: { start: 700, rate: 0.45 },
-    erupt: { start: 1400, rate: 0.25 },
-    sweeps: { start: 900, rate: 0.02 },
-    dogs: 2, dog2At: 2600, dogColor: '#ff4fd8',
+    unlock: 100000, maxSpeed: 40, firstDogCd: 540, dogCdMin: 420,
+    baseGap: 92, wideChance: 0.07, waveGapShrink: 1.8,
+    double: { start: 2000, rate: 0.22 },
+    erupt: { start: 2800, rate: 0.13 },
+    sweeps: { start: 2400, rate: 0.009 },
+    dogs: 2, dog2At: 4200, dogColor: '#ff4fd8',
     theme: {
       skyTop: '#080012', skyBot: '#210c4a', ground: '#4a1e8a',
       pillarTop: '#9d6bff', pillarBot: '#3a1570', pillarHi: '#e2d2ff', pillarStripe: '#7c3fe0',
@@ -775,13 +798,13 @@ const LEVELS = [
   },
   { // 6 天空云岛
     id: 6, title: '天空云岛', subtitle: '低重力 · 浮空高柱', icon: '☁️',
-    unlock: 140000, maxSpeed: 68, firstDogCd: 280, dogCdMin: 210,
-    baseGap: 48, wideChance: 0.15, waveGapShrink: 2.7,
-    double: { start: 1100, rate: 0.4 },
+    unlock: 140000, maxSpeed: 44, firstDogCd: 520, dogCdMin: 400,
+    baseGap: 88, wideChance: 0.08, waveGapShrink: 1.9,
+    double: { start: 2000, rate: 0.20 },
     erupt: { start: Infinity, rate: 0 },
-    sweeps: { start: 3000, rate: 0.008 },
+    sweeps: { start: 4200, rate: 0.005 },
     dogs: 1, dog2At: Infinity, dogColor: '#7ec8ff',
-    gravityMul: 0.8, pillarTall: 0.3,
+    gravityMul: 0.8, pillarTall: 0.2,
     theme: {
       skyTop: '#191246', skyBot: '#5a3f8e', ground: '#9a7fd0',
       pillarTop: '#ffd97a', pillarBot: '#b07a2e', pillarHi: '#fff3c4', pillarStripe: '#ffe1a0',
@@ -794,11 +817,11 @@ const LEVELS = [
   },
   { // 7 黄沙古迹
     id: 7, title: '黄沙古迹', subtitle: '沙暴蔽日 · 滚石横飞', icon: '🏜️',
-    unlock: 210000, maxSpeed: 76, firstDogCd: 260, dogCdMin: 190,
-    baseGap: 46, wideChance: 0.17, waveGapShrink: 2.8,
-    double: { start: 1000, rate: 0.42 },
-    erupt: { start: 1600, rate: 0.2 },
-    sweeps: { start: 1600, rate: 0.016, style: 'rock' },
+    unlock: 210000, maxSpeed: 48, firstDogCd: 500, dogCdMin: 380,
+    baseGap: 84, wideChance: 0.09, waveGapShrink: 2.0,
+    double: { start: 1900, rate: 0.21 },
+    erupt: { start: 3000, rate: 0.10 },
+    sweeps: { start: 3200, rate: 0.007, style: 'rock' },
     dogs: 1, dog2At: Infinity, dogColor: '#ffb347',
     dustStorm: { on: 900, off: 320 },
     theme: {
@@ -813,13 +836,13 @@ const LEVELS = [
   },
   { // 8 霓虹深海
     id: 8, title: '霓虹深海', subtitle: '洋流涌动 · 水雷暗礁', icon: '🌊',
-    unlock: 300000, maxSpeed: 84, firstDogCd: 240, dogCdMin: 180,
-    baseGap: 44, wideChance: 0.18, waveGapShrink: 2.9,
-    double: { start: 900, rate: 0.44 },
-    erupt: { start: 1300, rate: 0.26, hi: '#2ee6ff' },
-    sweeps: { start: 2000, rate: 0.012, style: 'mine' },
+    unlock: 300000, maxSpeed: 52, firstDogCd: 480, dogCdMin: 360,
+    baseGap: 80, wideChance: 0.10, waveGapShrink: 2.1,
+    double: { start: 1800, rate: 0.22 },
+    erupt: { start: 2800, rate: 0.12, hi: '#2ee6ff' },
+    sweeps: { start: 3600, rate: 0.006, style: 'mine' },
     dogs: 1, dog2At: Infinity, dogColor: '#5fe8c0',
-    gravityMul: 0.85, speedPulse: { cd: 2600, dur: 380, mul: 1.15, label: '🌊 洋流加速', color: '#2ee6ff' },
+    gravityMul: 0.85, speedPulse: { cd: 3200, dur: 320, mul: 1.08, label: '🌊 洋流加速', color: '#2ee6ff' },
     theme: {
       skyTop: '#02101c', skyBot: '#074a68', ground: '#0f6a8e',
       pillarTop: '#ff6a8a', pillarBot: '#6e1438', pillarHi: '#ffd7e0', pillarStripe: '#ff315f',
@@ -832,13 +855,13 @@ const LEVELS = [
   },
   { // 9 星际太空
     id: 9, title: '星际太空', subtitle: '零重力 · 陨石双子', icon: '🚀',
-    unlock: 420000, maxSpeed: 92, firstDogCd: 230, dogCdMin: 170,
-    baseGap: 42, wideChance: 0.2, waveGapShrink: 3,
-    double: { start: 800, rate: 0.5 },
-    erupt: { start: 1100, rate: 0.3, hi: '#ff9c3a' },
-    sweeps: { start: 1200, rate: 0.02, style: 'meteor' },
-    dogs: 2, dog2At: 2400, dogColor: '#9d6bff',
-    gravityMul: 0.72, pillarTall: 0.35,
+    unlock: 420000, maxSpeed: 56, firstDogCd: 460, dogCdMin: 340,
+    baseGap: 76, wideChance: 0.11, waveGapShrink: 2.2,
+    double: { start: 1700, rate: 0.24 },
+    erupt: { start: 2600, rate: 0.14, hi: '#ff9c3a' },
+    sweeps: { start: 3000, rate: 0.009, style: 'meteor' },
+    dogs: 2, dog2At: 4000, dogColor: '#9d6bff',
+    gravityMul: 0.72, pillarTall: 0.22,
     theme: {
       skyTop: '#05030f', skyBot: '#1c0f4a', ground: '#3a2a7a',
       pillarTop: '#9d6bff', pillarBot: '#33136e', pillarHi: '#e2d2ff', pillarStripe: '#7c3fe0',
@@ -851,13 +874,13 @@ const LEVELS = [
   },
   { // 10 极速光隧
     id: 10, title: '极速光隧', subtitle: '超光速 · 激光双狗', icon: '⚡',
-    unlock: 560000, maxSpeed: 105, firstDogCd: 200, dogCdMin: 150,
-    baseGap: 40, wideChance: 0.22, waveGapShrink: 3.2,
-    double: { start: 600, rate: 0.6 },
-    erupt: { start: 900, rate: 0.4 },
-    sweeps: { start: 600, rate: 0.028, style: 'laser' },
-    dogs: 2, dog2At: 1800, dogColor: '#52f5ff',
-    pillarTall: 0.25, speedPulse: { cd: 2000, dur: 300, mul: 1.2, label: '⚡ 超光速', color: '#52f5ff' },
+    unlock: 560000, maxSpeed: 62, firstDogCd: 440, dogCdMin: 320,
+    baseGap: 72, wideChance: 0.12, waveGapShrink: 2.4,
+    double: { start: 1600, rate: 0.26 },
+    erupt: { start: 2400, rate: 0.16 },
+    sweeps: { start: 2600, rate: 0.011, style: 'laser' },
+    dogs: 2, dog2At: 3800, dogColor: '#52f5ff',
+    pillarTall: 0.18, speedPulse: { cd: 2800, dur: 280, mul: 1.10, label: '⚡ 超光速', color: '#52f5ff' },
     theme: {
       skyTop: '#070012', skyBot: '#1e0a4a', ground: '#5a1ea0',
       pillarTop: '#3ec9ff', pillarBot: '#154a8a', pillarHi: '#d6f2ff', pillarStripe: '#2ea8e0',
@@ -916,12 +939,13 @@ let tutorialMode = false; // 本局是否教程关
 let introShown = false;   // 首次引导是否已弹过（仅本次运行）
 let tutDist = 0;          // 教程已跑距离(px)
 let daily = null;         // { date, tasks:[{id,type,target,reward,prog,done,claimed}] }
-let runStats = { jumps: 0, gems: 0 };   // 本局累计跳跃次数 / 吃球数（任务用）
+let runStats = { jumps: 0, gems: 0, hits: 0 };   // 本局累计跳跃次数 / 吃球数 / 受伤次数（任务与结算用）
 let W, H, run = 0, paused = 0, side = 1, level = 1;
 let score = 0, best = 0, speed, wait, obs = [], gems = [], parts = [], floats = [], ghost = [];
 let sweeps = [];   // 扁障碍（低扫火球 / 激光）
 let py = 0, pvy = 0, jumpCount = 0, holdJump = 0;
 let combo = 0, comboMax = 0, last, gameT = 0, flash = 0, dying = 0, dieT = 0;
+let hp = HP_BASE, hpMax = HP_BASE, hurtT = 0;   // 生命值 / 上限 / 受伤红屏计时
 let runCoins = 0, pendingCoins = 0, shopState, shopStorageOK = true, shopOpener = null;
 let accounts = [], currentUser = null, authMode = 'login';
 // 主题天空渐变缓存（每次绘制复用，避免每帧创建渐变对象）
@@ -1055,7 +1079,8 @@ let dust = { t: 0, on: false };               // 沙尘暴
 let pickups = [];         // 局内拾取道具盒
 let pickupsGot = 0;       // 本局拾取数
 let jumpBuf = 0;          // 跳跃缓冲帧
-let spaceStars = [];      // 太空背景预生成星点
+let bgCache = { key: '', d: null };   // 背景几何/配色缓存（换关或改变窗口时失效）
+let fxCache = { key: '', g: null };   // 背景渐变缓存
 
 function loadProgress() {
   let raw = null;
@@ -1737,31 +1762,14 @@ if (window.CSS && typeof CSS.supports === 'function' && CSS.supports('-webkit-te
 }
 setAuthMode('login');
 
-// 太空背景预生成星点（随窗口尺寸重建，避免每帧随机分配）
-function buildSpaceStars() {
-  spaceStars = [];
-  const n = Math.min(120, Math.floor(W * H / 12000));
-  for (let i = 0; i < n; i++) {
-    spaceStars.push({
-      x: Math.random() * (W + 40),
-      y: Math.random() * H * 0.7,
-      s: Math.random() < 0.85 ? 1.4 : 2.4,
-      a: 0.3 + Math.random() * 0.7,
-      tw: 0.02 + Math.random() * 0.06,
-      ph: Math.random() * 7,
-      par: 0.4 + Math.random() * 0.6,
-      col: Math.random() < 0.3 ? '#9d6bff' : Math.random() < 0.5 ? '#4fe3ff' : '#ffffff'
-    });
-  }
-}
 function size() {
   W = innerWidth; H = innerHeight;
   gradCache.key = '';
+  invalidateBgCache();                               // 背景几何/渐变随尺寸重建
   const ratio = Math.min(devicePixelRatio || 1, 2);   // 4K/高分屏钳制，保证帧率
   c.width = W * ratio;
   c.height = H * ratio;
   x.setTransform(ratio, 0, 0, ratio, 0, 0);
-  buildSpaceStars();
 }
 size(); addEventListener('resize', size);
 
@@ -1942,6 +1950,7 @@ function menu() {
   end.classList.add('off'); pauseLayer.classList.add('off'); hideTutIntro();
   menuEl.classList.remove('off');
   hudItems.textContent = ''; hudBuffs.textContent = '';
+  if (hudHpEl) hudHpEl.innerHTML = '';
   updateBest();
   bestEl.textContent = best;
   updateCoinUI();
@@ -2174,18 +2183,21 @@ function renderHistList(filterLv) {
 function start() {
   menuEl.classList.add('off'); end.classList.add('off'); hideTutIntro();
   run = 1; paused = 0;
-  runStats.jumps = 0; runStats.gems = 0;
+  runStats.jumps = 0; runStats.gems = 0; runStats.hits = 0;
   score = 0; runCoins = 0; pendingCoins = 0; speed = 6 + (shopState.passives.startSpeed || 0); wait = 48;
   obs = []; gems = []; parts = []; floats = []; ghost = []; sweeps = [];
   py = 0; pvy = 0; jumpCount = 0; holdJump = 0; combo = 0; comboMax = 0;
   gameT = 0; flash = 0; dying = 0; dieT = 0; jumpHoldFrames = 0;
+  hpMax = HP_BASE; hp = hpMax; hurtT = 0;
+  renderHudHp();
   lastDeath = '';
   itemsUsed = [];
   pulse = { t: 0, active: false, mul: 1 };
   dust = { t: 0, on: false };
   pickups = []; pickupsGot = 0; jumpBuf = 0;
-  buildSpaceStars();
+  invalidateBgCache();   // 换关/重开时重建背景几何
   const c = cfg();
+  bgData(c);             // 预建背景缓存，地面与 HUD 也复用其中的主题配色
   if (tutorialMode) {
     // 教程：不消耗背包道具、不吃被动增益、无疯狗，低速起跑
     tutHint.innerHTML = TUT_HINTS[0];
@@ -2281,41 +2293,41 @@ DIALOGS.push(taskDialog, setDialog);
 function effGravity() { return G * (cfg().gravityMul || 1); }
 function makeObstacle(wantType) {
   const c = cfg();
-  const wide = Math.random() < c.wideChance + Math.min(0.08, gameT / 8000);
+  const wide = Math.random() < c.wideChance + Math.min(0.05, gameT / 12000);
   const w = wide ? 44 : 25;
   const r = Math.random();
-  const early = gameT < 1500;
-  const fast = speed > 24;
+  const early = gameT < 2200;          // 开局缓冲期加长，前两秒不出高柱
+  const fast = speed > 30;             // 只有真正高速时才提高高柱占比
   const tallCh = c.pillarTall || 0;
   let h;
-  if (early) h = r < (0.6 - tallCh * 0.5) ? 45 + Math.random() * 25 : 170 + Math.random() * 40;
-  else if (r < tallCh) h = 230 + Math.random() * 70;
-  else if (r < tallCh + (fast ? 0.42 : 0.42 * (1 - tallCh))) h = 90 + Math.random() * 20;
-  else if (r < 0.76 + tallCh * 0.2) h = 45 + Math.random() * 25;
-  else h = 170 + Math.random() * 40;
+  if (early) h = r < (0.7 - tallCh * 0.5) ? 45 + Math.random() * 25 : 150 + Math.random() * 40;
+  else if (r < tallCh) h = 220 + Math.random() * 60;
+  else if (r < tallCh + (fast ? 0.36 : 0.42 * (1 - tallCh))) h = 90 + Math.random() * 20;
+  else if (r < 0.8 + tallCh * 0.2) h = 45 + Math.random() * 25;
+  else h = 160 + Math.random() * 40;
   const o = { x: side === 1 ? W + 50 : -50, w, h, px: 0, wide, type: 'pillar', seed: Math.random() };
   const rollDouble = c.double.start <= gameT && Math.random() < c.double.rate;
   const rollErupt = c.erupt.start <= gameT && Math.random() < c.erupt.rate;
   if (wantType === 'double' || (rollDouble && !rollErupt)) {
     o.type = 'double';
     // 夹缝柱：下柱 + 距地 beamY 高的横梁（低跳不过去会被梁扫到，二段则钻缝或越顶）
-    o.beamY = o.h + 34 + Math.random() * 26;   // 横梁底离地高度：可二段跳过或贴着跳钻
-    if (o.beamY > o.h + 90) o.beamY = o.h + 60;
+    o.beamY = o.h + 40 + Math.random() * 26;   // 横梁底离地高度：可二段跳过或贴着跳钻
+    if (o.beamY > o.h + 90) o.beamY = o.h + 66;
   } else if (wantType === 'erupt' || (rollErupt && !rollDouble)) {
-    o.type = 'erupt'; o.eruptCd = 260 + Math.random() * 120; o.eruptT = 0;
+    o.type = 'erupt'; o.eruptCd = 300 + Math.random() * 140; o.eruptT = 0;
     if (c.erupt.hi) o.hi = c.erupt.hi;
   }
   return o;
 }
 function spawnWave() {
   const c = cfg();
-  const wave = Math.floor(gameT / 1800);           // 每约30秒一档
-  const gap = Math.max(45, c.baseGap - wave * c.waveGapShrink - (speed - 6) * 0.15);
+  const wave = Math.floor(gameT / 2400);           // 每约40秒一档（原来30秒，压力上升更慢）
+  const gap = Math.max(52, c.baseGap - wave * c.waveGapShrink - (speed - 6) * 0.15);
   let made = 1;
   const first = makeObstacle();
   obs.push(first);
   // 双柱：从第2关起按 config 概率（第2关曾经硬编码 level===2，现由 cfg.double 控制）
-  if (c.double.rate > 0 && wave >= 2 && Math.random() < 0.2 + Math.min(0.3, wave * 0.02) * (c.id >= 3 ? 1.2 : 1)) {
+  if (c.double.rate > 0 && wave >= 2 && Math.random() < 0.12 + Math.min(0.22, wave * 0.015) * (c.id >= 3 ? 1.2 : 1)) {
     const second = makeObstacle();
     if (first.h > 150 && second.h > 150) second.h = 90 + Math.random() * 20;
     second.x = first.x + side * speed * 100;
@@ -2359,15 +2371,22 @@ const PICKUP_POOL = [
   { id: 'magnet', w: 18 },
   { id: 'double', w: 15 },
   { id: 'slowmo', w: 12 },
-  { id: 'boost', w: 22 }
+  { id: 'boost', w: 22 },
+  { id: 'heart', w: 16 }    // 仅当生命不满时进入抽取池
 ];
+const PICKUP_WEIGHT = PICKUP_POOL.reduce((sum, p) => sum + p.w, 0);
+const PICKUP_POOL_HURT = PICKUP_POOL.filter(p => p.id !== 'heart');
 function maybeSpawnPickup(dt) {
   const c = cfg();
   if (c.pickup === false || gameT < 900 || pickups.length >= 1) return;
   const chance = 1 - Math.pow(1 - 0.005, dt);
   if (Math.random() > chance) return;
-  let roll = Math.random() * 77, acc = 0, id = 'boost';
-  for (const p of PICKUP_POOL) { acc += p.w; if (roll < acc) { id = p.id; break; } }
+  // 满血时不再掉落回血盒
+  const hurt = hp < hpMax;
+  const pool = hurt ? PICKUP_POOL : PICKUP_POOL_HURT;
+  const total = hurt ? PICKUP_WEIGHT : PICKUP_WEIGHT - 16;
+  let roll = Math.random() * total, acc = 0, id = 'boost';
+  for (const p of pool) { acc += p.w; if (roll < acc) { id = p.id; break; } }
   const nearGround = Math.random() < 0.6;
   pickups.push({
     x: side === 1 ? W + 60 : -60, px: 0,
@@ -2382,8 +2401,8 @@ function dogX(d) { return px() - side * d.dist; }   // 狗嘴位置x（dist=到�
 function nextDogCd(d) {
   const c = cfg();
   const base = c.dogCdMin / (d.scale < 1 ? 1.25 : 1);   // 小狗扑得更勤
-  const boost = Math.floor(gameT / 3600);            // 每60秒再减
-  const cd = Math.max(150, base - boost * 60) * (0.75 + Math.random() * 0.5);
+  const boost = Math.floor(gameT / 4800);             // 每约80秒再减（原来60秒）
+  const cd = Math.max(240, base - boost * 50) * (0.75 + Math.random() * 0.5);
   return cd;
 }
 function updateDogs(dt) {
@@ -2399,7 +2418,7 @@ function updateDogs(dt) {
       continue;
     }
     if (dog.mode === 'chase') {
-      const press = Math.min(1, gameT / 60000);
+      const press = Math.min(1, gameT / DOG_PRESS_MS);
       const range = (DOG_CHASE - DOG_MIN_CHASE);
       const base = DOG_CHASE - range * press;
       dog.dist = base + range * 0.18 * Math.sin(dog.anim * 0.9);
@@ -2414,7 +2433,7 @@ function updateDogs(dt) {
       dog.wt -= dt;
       if (dog.wt <= 0) {
         dog.mode = 'lunge';
-        dog.lungeV = speed * (dog.scale < 1 ? 1.7 : 1.9) + 14;
+        dog.lungeV = speed * (dog.scale < 1 ? 1.5 : 1.65) + 12;
       }
     } else if (dog.mode === 'lunge') {
       dog.dist -= dog.lungeV * dt;
@@ -2443,43 +2462,79 @@ function updateDogs(dt) {
     }
   }
 }
+// ===== 生命值 =====
+function renderHudHp(shake = false) {
+  if (!hudHpEl) return;
+  let html = '';
+  for (let i = 0; i < hpMax; i++) html += '<i class="hp-cell' + (i < hp ? ' on' : '') + '"></i>';
+  html += '<b>' + Math.max(0, hp) + '/' + hpMax + '</b>';
+  hudHpEl.innerHTML = html;
+  if (shake) {
+    hudHpEl.classList.remove('hurt');
+    void hudHpEl.offsetWidth;   // 强制重排以重播动画
+    hudHpEl.classList.add('hurt');
+  }
+}
+// 统一受伤入口：所有伤害（柱子 / 扁障碍 / 疯狗）都走这里
+function applyHit(source, color, xx, yy) {
+  if (dying || isDeveloper() || buffs.invincible > 0) return;   // 已死 / 开发者 / 无敌帧
+  if (buffs.shield > 0) {
+    buffs.shield = 0;
+    playSfx('shield');
+    spawnBurst(xx, yy, '#4fe3ff', 18, 4);
+    addFloat(xx, yy - 62, '护盾抵挡！', '#4fe3ff', 1);
+    setInvincible(1.5);
+    renderHudBuffs(true);
+    return;
+  }
+  hp--;
+  runStats.hits++;
+  combo = 0; comboBox.textContent = ''; lastComboHtml = '';
+  renderHudHp(true);
+  if (hp > 0) {
+    playSfx('hit');
+    hurtT = HURT_FLASH_FRAMES;
+    flash = 0.3;                    // 短暂白闪（约 7 帧），长于此时会冻结背景造成卡顿感
+    setInvincible(HIT_INVINCIBLE);
+    buffs.hurt = HIT_SLOW_FRAMES;
+    spawnBurst(xx, yy, color, 16, 3.6);
+    spawnRing(xx, yy, color);
+    addFloat(xx, yy - 62, '生命 -1', color, 1.1);
+    return;
+  }
+  // 生命耗尽：先看是否有复活芯片
+  if (buffs.revive > 0) {
+    buffs.revive = 0;
+    hp = hpMax;
+    renderHudHp(true);
+    setInvincible(2);
+    playSfx('revive');
+    spawnBurst(xx, yy, '#ffd94a', 28, 5);
+    spawnRing(xx, yy, '#ffd94a');
+    addFloat(xx, yy - 72, '复活芯片！', '#ffd94a', 1.4);
+    flash = 0.6;
+    renderHudBuffs(true);
+    return;
+  }
+  lastDeath = source;
+  dying = 1; dieT = 0; flash = 1;
+  playSfx('hit');
+  spawnBurst(xx, yy, color, 22, 4);
+  spawnRing(xx, yy, color);
+}
 function hitByDog(dog) {
+  // 咬中后狗收势后退（无论是否被护盾/无敌挡下，避免同一口反复触发）
+  if (dog) {
+    dog.mode = 'recover';
+    dog.ret = Math.max(dog.ret || 0, dog.lungeV * 0.8 || 120);
+  }
   if (isDeveloper()) {
-    if (dog) {
-      dog.mode = 'recover';
-      dog.ret = Math.max(dog.ret || 0, dog.lungeV * 0.8 || 120);
-    }
     addFloat(px(), gy() - py - 86, '开发者无敌', '#ffd94a', 0.8);
     return;
   }
-  if (buffs.invincible > 0 || buffs.shield > 0) {
-    if (buffs.shield > 0) {
-      buffs.shield = 0;
-      playSfx('shield');
-      spawnBurst(px(), gy() - py - 20, '#4fe3ff', 20, 4);
-      addFloat(px(), gy() - py - 60, '护盾抵挡！', '#4fe3ff', 1);
-      setInvincible(1.5);
-    }
-    return;
-  }
-  if (buffs.revive > 0) {
-    buffs.revive = 0;
-    setInvincible(1.5);
-    playSfx('revive');
-    spawnBurst(px(), gy() - py - 20, '#ffd94a', 26, 5);
-    addFloat(px(), gy() - py - 70, '复活芯片！', '#ffd94a', 1.4);
-    combo = 0; comboBox.textContent = '';
-    flash = 0.6;   // 不致死，短暂红闪警示
-    return;
-  }
-  lastDeath = 'dog';
-  flash = 1;
-  playSfx('hit');
-  spawnBurst(px(), gy() - py - 20, '#ff7b2e', 26, 4.5);
-  spawnRing(px(), gy() - py - 20, '#ff7b2e');
-  combo = 0; comboBox.textContent = '';
-  dying = 1; dieT = 0;
+  applyHit('dog', '#ff7b2e', px(), gy() - py - 20);
 }
+
 function setInvincible(sec) { buffs.invincible = Math.max(buffs.invincible || 0, sec * 60); }
 function drawDog(dog) {
   const g = gy();
@@ -2539,18 +2594,20 @@ function drawDog(dog) {
 function tickBuffs(dt) {
   // 护盾/复活是次数型，其余是帧数型
   let changed = false;
-  ['invincible', 'magnet', 'slowmo', 'double', 'boost', 'rocket', 'net'].forEach(k => {
+  ['invincible', 'magnet', 'slowmo', 'double', 'boost', 'rocket', 'net', 'hurt'].forEach(k => {
     if (buffs[k] > 0) {
       buffs[k] = Math.max(0, buffs[k] - dt);
-      if (buffs[k] === 0) { spawnBurst(px(), gy() - py - 30, '#846cff', 8, 2); changed = true; }
+      if (buffs[k] === 0 && k !== 'hurt') { spawnBurst(px(), gy() - py - 30, '#846cff', 8, 2); changed = true; }
     }
   });
+  if (hurtT > 0) hurtT = Math.max(0, hurtT - dt);
   renderHudBuffs();
   // 仅在 buff 状态变化时重建道具栏（按钮激活/冷却样式）
   if (changed) renderHudItems();
 }
 function effSpeed() {
   let s = speed;
+  if (buffs.hurt > 0) s *= HIT_SLOW_MUL;
   if (buffs.slowmo > 0) s *= 0.6;
   if (buffs.boost > 0) s *= 1.35;
   if (buffs.rocket > 0) s *= 1.6;
@@ -2663,32 +2720,7 @@ function loop(t) {
     }
   }
   if (hit && !dying) {
-    if (isDeveloper()) {
-      hit = false;
-    } else if (buffs.invincible > 0 || buffs.shield > 0) {
-      if (buffs.shield > 0) {
-        buffs.shield = 0;
-        playSfx('shield');
-        spawnBurst(pxs, ground - py - 24, '#4fe3ff', 18, 4);
-        addFloat(pxs, ground - py - 80, '护盾抵挡！', '#4fe3ff', 1);
-      }
-      setInvincible(1.5);
-    } else if (buffs.revive > 0) {
-      buffs.revive = 0;
-      buffs.invincible = 1.5 * 60;
-      playSfx('revive');
-      spawnBurst(pxs, ground - py - 24, '#ffd94a', 24, 5);
-      addFloat(pxs, ground - py - 80, '复活芯片！', '#ffd94a', 1.4);
-      flash = 0.6;
-    } else {
-      lastDeath = 'pillar';
-      dying = 1; dieT = 0;
-      flash = 1;
-      playSfx('hit');
-      spawnBurst(pxs, ground - py - 24, c.theme.danger, 22, 4);
-      spawnRing(pxs, ground - py - 24, c.theme.danger);
-      combo = 0; comboBox.textContent = '';
-    }
+    applyHit('pillar', c.theme.danger, pxs, ground - py - 24);
   }
 
   // 扁障碍移动 + 碰撞（rock/meteor 自带向前冲速，其余随场景速度）
@@ -2703,32 +2735,8 @@ function loop(t) {
       const lo = Math.min(s2.x, s2.px), hi = Math.max(s2.x, s2.px) + s2.w;
       if (hi > pxs - 16 && lo < pxs + 24 && py < s2.h - 6) {
         const laser = s2.type === 'laser';
-        if (isDeveloper()) {
-          break;
-        } else if (buffs.invincible > 0 || buffs.shield > 0) {
-          if (buffs.shield > 0) {
-            buffs.shield = 0;
-            playSfx('shield');
-            spawnBurst(pxs, ground - py - 24, '#4fe3ff', 18, 4);
-            addFloat(pxs, ground - py - 80, '护盾抵挡！', '#4fe3ff', 1);
-          }
-          setInvincible(1.5);
-        } else if (buffs.revive > 0) {
-          buffs.revive = 0;
-          buffs.invincible = 1.5 * 60;
-          playSfx('revive');
-          spawnBurst(pxs, ground - py - 24, '#ffd94a', 24, 5);
-          addFloat(pxs, ground - py - 80, '复活芯片！', '#ffd94a', 1.4);
-          flash = 0.6;
-        } else {
-          lastDeath = laser ? 'laser' : 'pillar';
-          dying = 1; dieT = 0; flash = 1;
-          playSfx('hit');
-          const dcol = laser ? '#9d6bff' : s2.type === 'mine' ? '#2ee6ff' : s2.type === 'meteor' ? '#ff9c3a' : '#ff8c42';
-          spawnBurst(pxs, ground - py - 24, dcol, 18, 4);
-          spawnRing(pxs, ground - py - 24, dcol);
-          combo = 0; comboBox.textContent = '';
-        }
+        const dcol = laser ? '#9d6bff' : s2.type === 'mine' ? '#2ee6ff' : s2.type === 'meteor' ? '#ff9c3a' : '#ff8c42';
+        applyHit(laser ? 'laser' : 'pillar', dcol, pxs, ground - py - 24);
         break;
       }
     }
@@ -2787,16 +2795,33 @@ function loop(t) {
   if (flash > 0) { x.fillStyle = c.theme.danger; x.globalAlpha = flash * 0.25; x.fillRect(0, 0, W, H); x.globalAlpha = 1; flash -= 0.04; }
   else drawBackground(c, t);
 
-  // 地面
-  x.strokeStyle = c.theme.ground; x.lineWidth = 1;
-  x.beginPath(); x.moveTo(0, ground); x.lineTo(W, ground); x.stroke();
-  x.strokeStyle = c.decor.kind === 'data' ? '#3a2160' : '#191043';
-  for (let i = 1; i < 9; i++) {
-    const yy = ground + i * i * 3.4;
-    x.globalAlpha = Math.max(0.15, 0.5 - i * 0.05);
+  // 地面：主题色地线 + 发光带 + 透视网格（横向滚动制造速度感）
+  const floorAccent = bgCache.d ? bgCache.d.pal.accent : c.theme.ground;
+  x.fillStyle = alphaCss(floorAccent, 0.09);
+  x.fillRect(0, ground - 6, W, 6);
+  // 纵向发散线（越靠下越向外扩，形成地面纵深）
+  x.strokeStyle = alphaCss(floorAccent, 0.16);
+  x.lineWidth = 1;
+  for (let i = -10; i <= 10; i++) {
+    const lx = parX(i * 136 + 68, side * t * 2.4, W + 420);
+    x.beginPath();
+    x.moveTo(lx, ground);
+    x.lineTo(lx + (lx - W / 2) * 0.42, H);
+    x.stroke();
+  }
+  // 横向深度线
+  x.strokeStyle = c.decor.kind === 'data' ? '#3a2160' : alphaCss(c.theme.ground, 0.85);
+  for (let i = 1; i < 10; i++) {
+    const yy = ground + i * i * 3.2;
+    x.globalAlpha = Math.max(0.12, 0.5 - i * 0.045);
     x.beginPath(); x.moveTo(0, yy); x.lineTo(W, yy); x.stroke();
   }
   x.globalAlpha = 1;
+  // 地平线（压在网格之上，带霓虹描边）
+  x.strokeStyle = c.theme.ground; x.lineWidth = 1.4;
+  x.beginPath(); x.moveTo(0, ground); x.lineTo(W, ground); x.stroke();
+  x.strokeStyle = alphaCss(floorAccent, 0.5); x.lineWidth = 1;
+  x.beginPath(); x.moveTo(0, ground + 1.5); x.lineTo(W, ground + 1.5); x.stroke();
 
   // 能量球（脉动光晕，随关配色）
   for (const g of gems) {
@@ -2896,7 +2921,9 @@ function loop(t) {
     x.beginPath(); x.arc(g2.xx, g2.yy - 58, 11, 0, 7); x.stroke();
   }
   x.globalAlpha = 1;
+  if (buffs.invincible > 0) x.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.028));
   drawCostumedRunner(x, pxs, ground - py, t, shopState.equipped, side, runnerColor(), py > 6);
+  x.globalAlpha = 1;
   for (const dog of dogs) drawDog(dog);   // 身后追逐的狗
 
   // 粒子（数量上限，防止极端场景掉帧）
@@ -2928,6 +2955,14 @@ function loop(t) {
     x.fillText(f.txt, f.xx, f.yy);
   }
   x.globalAlpha = 1;
+
+  // 受伤红屏（叠加在场景之上，不中断背景）
+  if (hurtT > 0) {
+    x.fillStyle = '#ff315f';
+    x.globalAlpha = 0.18 * Math.min(1, hurtT / HURT_FLASH_FRAMES);
+    x.fillRect(0, 0, W, H);
+    x.globalAlpha = 1;
+  }
 
   // HUD（sp/combo 仅在文本变化时写 DOM）
   scEl.textContent = score;
@@ -2963,329 +2998,782 @@ function collectGem(g, pxs, gyy) {
 }
 
 // ===== 局内拾取道具盒 =====
-const PICKUP_ICON = { shield: '🛡', magnet: '🧲', double: '💰', slowmo: '⏳', boost: '💨' };
-const PICKUP_COLOR = { shield: '#4fe3ff', magnet: '#ff8c42', double: '#ffd94a', slowmo: '#9adcff', boost: '#52f5ff' };
-const PICKUP_NAME = { shield: '护盾', magnet: '磁铁', double: '金币×2', slowmo: '慢动作', boost: '冲刺' };
+const PICKUP_ICON = { shield: '🛡', magnet: '🧲', double: '💰', slowmo: '⏳', boost: '💨', heart: '❤' };
+const PICKUP_COLOR = { shield: '#4fe3ff', magnet: '#ff8c42', double: '#ffd94a', slowmo: '#9adcff', boost: '#52f5ff', heart: '#ff5d8f' };
+const PICKUP_NAME = { shield: '护盾', magnet: '磁铁', double: '金币×2', slowmo: '慢动作', boost: '冲刺', heart: '生命 +1' };
 function collectPickup(p, pxs, foot, pyy) {
   const id = p.id;
   pickupsGot++;
   const col = PICKUP_COLOR[id] || '#ffd94a';
   playSfx('pickup');
   // 即时生效：护盾为次数型（已有则叠 1s 无敌避免浪费），其余延长时间
+  let label = PICKUP_NAME[id] + '！';
   if (id === 'shield') {
     if (buffs.shield > 0) setInvincible(1);
     else buffs.shield = 1;
+  } else if (id === 'heart') {
+    // 满血时转化为金币，避免浪费
+    if (hp < hpMax) { hp++; renderHudHp(); }
+    else { const bonus = 20; pendingCoins += bonus; runCoins += bonus; updateCoinUI(); label = '满血 · +' + bonus + ' 金币'; }
   } else if (id === 'magnet') buffs.magnet = (buffs.magnet || 0) + 8 * 60;
   else if (id === 'double') buffs.double = (buffs.double || 0) + 10 * 60;
   else if (id === 'slowmo') buffs.slowmo = (buffs.slowmo || 0) + 4 * 60;
   else if (id === 'boost') buffs.boost = (buffs.boost || 0) + 5 * 60;
   spawnBurst(pxs, pyy, col, 14, 3.4);
   spawnRing(pxs, pyy, col);
-  addFloat(pxs, pyy - 20, PICKUP_NAME[id] + '！', col, 1.2);
+  addFloat(pxs, pyy - 20, label, col, 1.2);
   renderHudBuffs();
 }
 
 // ===== 主题化渲染 =====
+// —— 背景系统：三层视差 + 地平线光晕 + 大气雾 + 氛围粒子 + 地面倒影 ——
+//    所有几何/配色在进入关卡时一次性生成并缓存，渲染时只做位移，保证 60fps
+
+function mulberry32(seed) {                 // 确定性伪随机：同一关每次生成一致
+  let a = seed >>> 0;
+  return function () {
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hexToRgb(hex) {
+  const v = parseInt(hex.slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+function rgbCss(c2, a) {
+  return a === undefined
+    ? 'rgb(' + (c2[0] | 0) + ',' + (c2[1] | 0) + ',' + (c2[2] | 0) + ')'
+    : 'rgba(' + (c2[0] | 0) + ',' + (c2[1] | 0) + ',' + (c2[2] | 0) + ',' + a + ')';
+}
+function mixRgb(a, b, t) {                  // RGB 元组插值
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+}
+// 两色混合：t=0 取 a，t=1 取 b（入参为 #rrggbb，返回 css 颜色）
+function mixHex(a, b, t) { return rgbCss(mixRgb(hexToRgb(a), hexToRgb(b), t)); }
+function shade(hex, k) {                    // k<1 变暗，k>1 变亮
+  const c2 = hexToRgb(hex);
+  return rgbCss([Math.min(255, c2[0] * k), Math.min(255, c2[1] * k), Math.min(255, c2[2] * k)]);
+}
+function alphaCss(hex, a) { return rgbCss(hexToRgb(hex), a); }
+// 视差层横向循环：把任意 base 映射到 [-160, span-160)，实现无缝滚动
+function parX(base, off, span) {
+  let v = (base - off) % span;
+  if (v < 0) v += span;
+  return v - 160;
+}
+
+function invalidateBgCache() { bgCache.key = ''; invalidateFxCache(); }
+
+function bgData(c) {
+  const key = (tutorialMode ? 'tut' : c.id) + '|' + Math.round(W) + 'x' + Math.round(H);
+  if (bgCache.key === key) return bgCache.d;
+  const rnd = mulberry32(0x5EED + (tutorialMode ? 0 : c.id) * 7919);
+  const span = W + 480;
+  const horizon = gy() - 40;
+  const d = { key, horizon, span, kind: c.decor.kind, far: [], mid: [], near: [], motes: [], stars: [] };
+  const kind = d.kind;
+
+  if (kind === 'city' || kind === 'data' || kind === 'cyber') {
+    // 楼宇 / 数据塔：三层，越近越高越亮
+    const towers = (n, minH, maxH, minW, maxW, litChance) => {
+      const arr = [];
+      for (let i = 0; i < n; i++) {
+        const w = minW + rnd() * (maxW - minW);
+        arr.push({
+          x: rnd() * span, w,
+          h: minH + rnd() * (maxH - minH),
+          seed: rnd() * 1000,
+          lit: rnd() < litChance,
+          spire: rnd() < 0.4,
+          broken: rnd() < 0.3
+        });
+      }
+      return arr;
+    };
+    d.far = towers(18, 90, 210, 44, 92, 0.5);
+    d.mid = towers(14, 140, 300, 56, 118, 0.65);
+    d.near = towers(10, 180, 400, 74, 156, 0.8);
+  } else if (kind === 'forest') {
+    const trees = (n, minH, maxH, step) => {
+      const arr = [];
+      for (let i = 0; i < n; i++) {
+        arr.push({ x: i * step + rnd() * step * 0.6, h: minH + rnd() * (maxH - minH), seed: rnd() * 100, w: 18 + rnd() * 16 });
+      }
+      return arr;
+    };
+    d.far = trees(22, 90, 170, 92);
+    d.mid = trees(16, 150, 260, 128);
+    d.near = trees(11, 220, 340, 180);
+  } else if (kind === 'lava') {
+    const peaks = (n, minH, maxH, w) => {
+      const arr = [];
+      for (let i = 0; i < n; i++) arr.push({ x: rnd() * span, h: minH + rnd() * (maxH - minH), w: w + rnd() * w });
+      return arr;
+    };
+    d.far = peaks(12, 120, 240, 90);
+    d.mid = peaks(9, 90, 190, 120);
+    d.near = peaks(7, 50, 120, 150);
+  } else if (kind === 'ice') {
+    const spires = (n, minH, maxH, w) => {
+      const arr = [];
+      for (let i = 0; i < n; i++) arr.push({ x: rnd() * span, h: minH + rnd() * (maxH - minH), w: w + rnd() * w, lean: (rnd() - 0.5) * 0.5 });
+      return arr;
+    };
+    d.far = spires(16, 100, 220, 60);
+    d.mid = spires(12, 130, 280, 80);
+    d.near = spires(8, 90, 200, 110);
+  } else if (kind === 'sky') {
+    d.far = Array.from({ length: 9 }, () => ({ x: rnd() * span, y: horizon - 60 - rnd() * 150, w: 70 + rnd() * 90, h: 18 + rnd() * 16 }));
+    d.mid = Array.from({ length: 6 }, () => ({ x: rnd() * span, y: horizon - 90 - rnd() * 190, w: 100 + rnd() * 110, h: 22 + rnd() * 20 }));
+    d.near = Array.from({ length: 16 }, () => ({ x: rnd() * span, y: horizon - 30 - rnd() * 160, w: 60 + rnd() * 100 }));
+  } else if (kind === 'desert') {
+    const pyramids = (n, minW, maxW, minH, maxH) => {
+      const arr = [];
+      for (let i = 0; i < n; i++) arr.push({ x: rnd() * span, w: minW + rnd() * (maxW - minW), h: minH + rnd() * (maxH - minH), seed: rnd() * 100 });
+      return arr;
+    };
+    d.far = pyramids(8, 70, 130, 60, 150);
+    d.mid = pyramids(6, 100, 190, 50, 110);
+    d.near = pyramids(5, 130, 240, 34, 70);
+  } else if (kind === 'sea') {
+    d.far = Array.from({ length: 14 }, () => ({ x: rnd() * span, h: 40 + rnd() * 70, sway: rnd() * 6.28, w: 5 }));
+    d.mid = Array.from({ length: 7 }, () => ({ x: rnd() * span, y: horizon - 40 - rnd() * 180, r: 14 + rnd() * 20, hue: rnd(), ph: rnd() * 6.28 }));
+    d.near = Array.from({ length: 12 }, () => ({ x: rnd() * span, h: 30 + rnd() * 60, sway: rnd() * 6.28 }));
+  } else if (kind === 'space') {
+    d.stars = Array.from({ length: 90 }, () => ({
+      x: rnd() * span, y: rnd() * horizon * 0.95,
+      s: rnd() < 0.75 ? 1.4 : 2.4, par: 0.05 + rnd() * 0.25,
+      a: 0.3 + rnd() * 0.7, tw: 0.02 + rnd() * 0.06, ph: rnd() * 6.28
+    }));
+  }
+  // 氛围粒子（所有主题通用，参数按主题微调）
+  const moteCfg = MOTES[kind] || MOTES.city;
+  d.motes = Array.from({ length: moteCfg.n }, () => ({
+    x: rnd() * span, y: rnd() * horizon,
+    r: moteCfg.rMin + rnd() * (moteCfg.rMax - moteCfg.rMin),
+    sp: 0.4 + rnd() * 0.9, ph: rnd() * 6.28, a: 0.2 + rnd() * 0.5
+  }));
+  // 派生配色（深→浅、暗→亮），避免每帧重复做颜色运算
+  const th = c.theme;
+  const gems = c.gems || [];
+  d.pal = {
+    farCol: mixHex(th.skyBot, th.skyTop, 0.35),
+    midCol: mixHex(th.skyBot, th.ground, 0.45),
+    nearCol: shade(th.ground, 0.85),
+    fogRgb: mixRgb(hexToRgb(th.skyTop), hexToRgb(th.skyBot), 0.55),
+    accent: gems[0] || '#4fe3ff',
+    accent2: gems[2] || '#ff6ad5'
+  };
+  bgCache.key = key;
+  bgCache.d = d;
+  return d;
+}
+const MOTES = {
+  city: { n: 26, rMin: 1.2, rMax: 3, rise: 0.2 },
+  forest: { n: 30, rMin: 1.5, rMax: 3.6, rise: -0.15 },
+  lava: { n: 34, rMin: 1.2, rMax: 3.2, rise: -0.9 },
+  ice: { n: 40, rMin: 1, rMax: 2.8, rise: 0.55 },
+  data: { n: 24, rMin: 1.2, rMax: 2.6, rise: -0.35 },
+  sky: { n: 22, rMin: 1.6, rMax: 4, rise: 0.15 },
+  desert: { n: 30, rMin: 1, rMax: 2.6, rise: 0.1 },
+  sea: { n: 30, rMin: 1.2, rMax: 3.2, rise: -0.7 },
+  space: { n: 18, rMin: 1, rMax: 2.4, rise: 0 },
+  cyber: { n: 28, rMin: 1.2, rMax: 3, rise: 0 }
+};
+
+// 每帧重建成本高的渐变统一缓存在 fx 缓存里（W/H 变化或换关时清空）
+function invalidateFxCache() { fxCache.key = ''; fxCache.g = null; }
+function fxGrads(c) {
+  const key = bgCache.key;
+  if (fxCache.key === key) return fxCache.g;
+  const th = c.theme;
+  const pal = bgCache.d.pal;
+  const horizon = gy() - 40;
+  const g = {};
+  // 地平线光晕
+  const hg = x.createRadialGradient(W * 0.5, horizon + 30, 10, W * 0.5, horizon + 30, W * 0.62);
+  hg.addColorStop(0, alphaCss(th.pillarStripe, 0.30));
+  hg.addColorStop(0.45, alphaCss(pal.accent, 0.10));
+  hg.addColorStop(1, 'rgba(0,0,0,0)');
+  g.horizonGlow = hg;
+  // 大气雾（地平线附近的薄雾，制造空气透视）
+  const fog = x.createLinearGradient(0, horizon - 200, 0, horizon + 20);
+  fog.addColorStop(0, rgbCss(pal.fogRgb, 0));
+  fog.addColorStop(0.65, rgbCss(pal.fogRgb, 0.14));
+  fog.addColorStop(1, rgbCss(pal.fogRgb, 0.30));
+  g.fog = fog;
+  // 暗角（收拢视线，突出中央的跑酷区域）
+  const vg = x.createRadialGradient(W * 0.5, H * 0.44, Math.min(W, H) * 0.34, W * 0.5, H * 0.5, Math.max(W, H) * 0.76);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.58)');
+  g.vignette = vg;
+  // 地面压暗（前景更沉，角色与障碍更跳）
+  const gf = x.createLinearGradient(0, gy(), 0, H);
+  gf.addColorStop(0, 'rgba(0,0,0,0.05)');
+  gf.addColorStop(1, 'rgba(0,0,0,0.5)');
+  g.groundFade = gf;
+  fxCache.key = key;
+  fxCache.g = g;
+  return g;
+}
+
 function skyGradient() {
   const th = cfg().theme;
   if (gradCache.key !== th.skyTop + th.skyBot) {
     const g = x.createLinearGradient(0, 0, 0, gy());
     g.addColorStop(0, th.skyTop);
-    g.addColorStop(1, th.skyBot);
+    g.addColorStop(0.42, mixHex(th.skyTop, th.skyBot, 0.42));
+    g.addColorStop(0.78, th.skyBot);
+    g.addColorStop(1, mixHex(th.skyBot, th.ground, 0.35));
     gradCache.sky = g;
     gradCache.key = th.skyTop + th.skyBot;
   }
   return gradCache.sky;
 }
+
+// —— 视差建筑/树木通用绘制 ——
+function bgTowerLayer(list, col, off, base, opt) {
+  const d = bgCache.d;
+  for (const b of list) {
+    const bx = parX(b.x, off, d.span);
+    const top = base - b.h;
+    x.fillStyle = col;
+    x.fillRect(bx, top, b.w, b.h + 30);
+    if (opt && opt.win) {
+      // 窗格：2x2px 亮点，按 seed 决定亮暗，营造纵深
+      x.fillStyle = alphaCss(opt.winCol, 0.5);
+      for (let wy = top + 10; wy < base - 12; wy += 16) {
+        for (let wx = bx + 7; wx < bx + b.w - 8; wx += 11) {
+          if (((wx * 7 + wy * 13 + b.seed) | 0) % 5 < 2) x.fillRect(wx, wy, 3, 5);
+        }
+      }
+    }
+    if (b.spire) {
+      x.strokeStyle = col;
+      x.lineWidth = 2;
+      x.beginPath(); x.moveTo(bx + b.w / 2, top); x.lineTo(bx + b.w / 2, top - 22); x.stroke();
+      x.fillStyle = alphaCss(opt && opt.winCol || '#ff5fa8', 0.55 + 0.45 * Math.sin(base + b.x));
+      x.beginPath(); x.arc(bx + b.w / 2, top - 24, 2.2, 0, 7); x.fill();
+    }
+  }
+}
+function bgConifer(list, col, off, base, opt) {
+  const d = bgCache.d;
+  for (const tr of list) {
+    const tx = parX(tr.x, off, d.span);
+    const top = base - tr.h;
+    x.fillStyle = col;
+    x.beginPath();
+    x.moveTo(tx - tr.w, base + 4);
+    x.lineTo(tx - tr.w * 0.55, top + tr.h * 0.38);
+    x.lineTo(tx - tr.w * 0.8, top + tr.h * 0.38);
+    x.lineTo(tx - tr.w * 0.3, top + tr.h * 0.14);
+    x.lineTo(tx - tr.w * 0.42, top + tr.h * 0.14);
+    x.lineTo(tx, top);
+    x.lineTo(tx + tr.w * 0.42, top + tr.h * 0.14);
+    x.lineTo(tx + tr.w * 0.3, top + tr.h * 0.14);
+    x.lineTo(tx + tr.w * 0.8, top + tr.h * 0.38);
+    x.lineTo(tx + tr.w * 0.55, top + tr.h * 0.38);
+    x.lineTo(tx + tr.w, base + 4);
+    x.closePath();
+    x.fill();
+    x.fillRect(tx - 4, base - 14, 8, 22);
+    if (opt && opt.rim) {   // 树梢发光边缘
+      x.strokeStyle = alphaCss(opt.rim, 0.5);
+      x.lineWidth = 1.5;
+      x.beginPath();
+      x.moveTo(tx - tr.w * 0.42, top + tr.h * 0.14);
+      x.lineTo(tx, top);
+      x.lineTo(tx + tr.w * 0.42, top + tr.h * 0.14);
+      x.stroke();
+    }
+  }
+}
+function bgPeaks(list, col, off, base, opt) {
+  const d = bgCache.d;
+  for (const p of list) {
+    const px6 = parX(p.x, off, d.span);
+    x.fillStyle = col;
+    x.beginPath();
+    x.moveTo(px6 - p.w, base + 6);
+    if (opt && opt.volcano) {
+      x.lineTo(px6 - p.w * 0.22, base - p.h);
+      x.lineTo(px6 - p.w * 0.12, base - p.h + 8);   // 火山口凹陷
+      x.lineTo(px6 + p.w * 0.12, base - p.h + 8);
+      x.lineTo(px6 + p.w * 0.22, base - p.h);
+    } else {
+      x.lineTo(px6 - p.w * 0.45, base - p.h * 0.82);
+      x.lineTo(px6 - p.w * 0.15, base - p.h);
+      x.lineTo(px6 + p.w * 0.2, base - p.h * 0.7);
+      x.lineTo(px6 + p.w * 0.5, base - p.h * 0.88);
+    }
+    x.lineTo(px6 + p.w, base + 6);
+    x.closePath();
+    x.fill();
+    if (opt && opt.crater && opt.volcano) {
+      x.fillStyle = alphaCss(opt.crater, 0.75);
+      x.fillRect(px6 - p.w * 0.12, base - p.h + 6, p.w * 0.24, 4);
+    }
+  }
+}
+// 地面倒影：把地平线上的剪影以地面线为轴镜像到下方，低透明度制造湿润地面的质感
+function bgReflection(drawItem, alpha) {
+  const g = gy();
+  x.save();
+  x.beginPath();
+  x.rect(0, g, W, Math.min(H * 0.18, 150));
+  x.clip();
+  x.globalAlpha = alpha;
+  x.translate(0, g * 2);
+  x.scale(1, -1);
+  drawItem();
+  x.restore();
+}
+
 function drawBackground(c, t) {
-  const th = c.theme;
+  const d = bgData(c);
+  const kind = d.kind;
+  const horizon = d.horizon;
+  const pal = d.pal;
+  const off = side * t;
   x.fillStyle = skyGradient();
   x.fillRect(0, 0, W, H);
-  // 视差装饰层（纯 canvas）
-  const kind = c.decor.kind;
-  const horizon = gy() - 40;
+
   if (kind === 'city') {
-    // 楼宇剪影（近暗/远更暗两层）
-    const layer = (par, col, seed) => {
-      x.fillStyle = col;
-      for (let i = 0; i < 14; i++) {
-        const bw = 60 + ((seed * (i + 3) * 17) % 70);
-        const bx = ((i * 160 + seed * 50) - (side * par * (t * 0.12 % 900))) % (W + 200) - 100;
-        const bh = horizon - ((seed * (i + 7) * 31) % 150) - 20;
-        x.fillRect(bx, bh, bw, horizon - bh + 40);
-      }
-    };
-    layer(0.35, '#120a30', 7);
-    layer(0.6, '#1a1140', 13);
-    // 霓虹招牌光点
-    for (let i = 0; i < 10; i++) {
-      const gx = ((i * 271) - (side * (t * 0.2 % 1800))) % (W + 40) - 20;
-      x.globalAlpha = 0.5 + 0.5 * Math.sin(t * 0.05 + i * 2);
-      x.fillStyle = i % 2 ? '#ff5fa8' : '#52f5ff';
-      x.fillRect(gx, horizon - 90 - (i % 5) * 16 - 8, 4, 4);
+    // 三层楼群：远（最暗最矮）→ 中（带窗格灯光）→ 近（最高、霓虹泛光）
+    bgTowerLayer(d.far, pal.farCol, off * 0.10, horizon + 30, null);
+    bgTowerLayer(d.mid, pal.midCol, off * 0.22, horizon + 36, { win: true, winCol: pal.accent });
+    for (const b of d.near) {                 // 近景楼的霓虹招牌泛光
+      const bx = parX(b.x, off * 0.38, d.span);
+      x.fillStyle = alphaCss(b.lit ? pal.accent : pal.accent2, 0.13);
+      x.fillRect(bx - 6, horizon - b.h + 16, b.w + 12, Math.max(20, b.h - 26));
     }
-    x.globalAlpha = 1;
+    bgTowerLayer(d.near, pal.nearCol, off * 0.38, horizon + 40, { win: true, winCol: pal.accent2 });
+    // 湿地面倒影
+    bgReflection(() => bgTowerLayer(d.near, pal.nearCol, off * 0.38, horizon + 40, null), 0.18);
+    // 空中的全息广告光带
+    for (let i = 0; i < 3; i++) {
+      x.fillStyle = alphaCss(i % 2 ? pal.accent2 : pal.accent, 0.07 - i * 0.015);
+      x.fillRect(0, horizon - 130 - i * 74, W, 6);
+    }
   } else if (kind === 'forest') {
-    for (let i = 0; i < 16; i++) {
-      const tx = ((i * 173) - (side * (t * 0.15 % 1400))) % (W + 120) - 60;
-      const th2 = 90 + (i % 4) * 40;
-      x.fillStyle = i % 2 ? '#082c18' : '#0b3a22';
+    // 林间光柱
+    for (let i = 0; i < 4; i++) {
+      const lx = parX(i * 340 + 80, off * 0.05, d.span);
+      const lg = x.createLinearGradient(lx, 0, lx + 130, horizon);
+      lg.addColorStop(0, alphaCss(pal.accent, 0.10));
+      lg.addColorStop(1, alphaCss(pal.accent, 0));
+      x.fillStyle = lg;
       x.beginPath();
-      x.moveTo(tx - 22, horizon + 4);
-      x.lineTo(tx, horizon - th2);
-      x.lineTo(tx + 22, horizon + 4);
-      x.fill();
-      x.fillRect(tx - 5, horizon - th2 + 18, 10, 26);
+      x.moveTo(lx, 0); x.lineTo(lx + 66, 0);
+      x.lineTo(lx + 196, horizon); x.lineTo(lx + 96, horizon);
+      x.closePath(); x.fill();
     }
-    // 孢子光点
-    for (let i = 0; i < 8; i++) {
-      const sx = ((i * 197 + 50) - (side * (t * 0.1 % 1200))) % W;
-      const sy = horizon - 40 - ((i * 83 + t * 0.2) % 180);
-      x.globalAlpha = 0.35 + 0.3 * Math.sin(t * 0.08 + i);
-      x.fillStyle = '#2effa5';
-      x.beginPath(); x.arc(sx, sy, 2.4, 0, 7); x.fill();
+    bgConifer(d.far, pal.farCol, off * 0.12, horizon + 24, null);
+    bgConifer(d.mid, pal.midCol, off * 0.24, horizon + 32, { rim: pal.accent });
+    bgConifer(d.near, pal.nearCol, off * 0.42, horizon + 40, { rim: pal.accent });
+    // 树冠间悬浮的荧光孢子
+    for (let i = 0; i < 14; i++) {
+      const sx = parX(i * 167 + 40, off * 0.3, d.span);
+      const sy = horizon - 30 - ((i * 91 + t * 0.25) % 200);
+      x.globalAlpha = 0.3 + 0.35 * Math.sin(t * 0.07 + i * 1.4);
+      x.fillStyle = pal.accent;
+      x.beginPath(); x.arc(sx, sy, 2.6, 0, 7); x.fill();
     }
     x.globalAlpha = 1;
   } else if (kind === 'lava') {
-    // 上升火星
-    for (let i = 0; i < 14; i++) {
-      const lx = (i * 137) % W;
-      const rise = (t * (0.3 + (i % 3) * 0.2) + i * 90) % (horizon + 60);
-      const ly = horizon + 40 - rise;
-      x.globalAlpha = Math.max(0, 0.7 - rise / (horizon + 60) * 0.6);
-      x.fillStyle = i % 3 === 0 ? '#ffaa33' : '#ff6a33';
-      x.fillRect(lx, ly, 3, 6);
+    // 火山群：远处火山口透出熔岩光
+    bgPeaks(d.far, pal.farCol, off * 0.10, horizon + 20, { volcano: true, crater: '#ff6a33' });
+    bgPeaks(d.mid, pal.midCol, off * 0.22, horizon + 30, { volcano: true, crater: '#ffb347' });
+    bgPeaks(d.near, pal.nearCol, off * 0.40, horizon + 40, null);
+    // 熔岩河：地平线附近横向流光
+    for (let i = 0; i < 3; i++) {
+      x.fillStyle = alphaCss(i === 0 ? '#ffd94a' : '#ff6a33', 0.26 - i * 0.07);
+      x.fillRect(0, horizon + 2 + i * 10, W, 3 - i * 0.6);
     }
-    x.globalAlpha = 1;
-    // 地平线熔岩光
-    const lg = x.createLinearGradient(0, horizon - 40, 0, horizon + 10);
-    lg.addColorStop(0, 'rgba(255,106,51,0)');
-    lg.addColorStop(1, 'rgba(255,106,51,.5)');
-    x.fillStyle = lg;
-    x.fillRect(0, horizon - 40, W, 50);
+    // 上升热浪
+    for (let i = 0; i < 5; i++) {
+      const ly = horizon - 40 - ((t * (0.5 + i * 0.18) + i * 90) % 280);
+      x.fillStyle = alphaCss('#ff8c42', 0.055);
+      x.fillRect(0, ly + Math.sin(t * 0.03 + i) * 4, W, 12);
+    }
   } else if (kind === 'ice') {
-    // 极光带
-    for (let band = 0; band < 2; band++) {
-      x.strokeStyle = band ? 'rgba(150,100,255,.32)' : 'rgba(80,240,180,.3)';
-      x.lineWidth = 34;
-      x.globalAlpha = 0.55 + 0.35 * Math.sin(t * 0.03 + band * 2.4);
+    // 极光：三条正弦光带，每条先铺宽辉光再压细亮芯
+    for (let band = 0; band < 3; band++) {
+      const baseY = horizon - 155 + band * 48;
+      const col = band === 0 ? '#5ff5c0' : band === 1 ? '#7fb0ff' : '#c49bff';
+      const glow = x.createLinearGradient(0, baseY - 60, 0, baseY + 70);
+      glow.addColorStop(0, alphaCss(col, 0));
+      glow.addColorStop(0.5, alphaCss(col, 0.5));
+      glow.addColorStop(1, alphaCss(col, 0));
+      const core = x.createLinearGradient(0, baseY - 60, 0, baseY + 70);
+      core.addColorStop(0, alphaCss(col, 0));
+      core.addColorStop(0.5, alphaCss('#ffffff', 0.7));
+      core.addColorStop(1, alphaCss(col, 0));
       x.beginPath();
-      const baseY = horizon - 130 + band * 60;
-      for (let px2 = -20; px2 <= W + 20; px2 += 40) {
-        const yy = baseY + Math.sin(px2 * 0.008 + t * 0.04 + band * 3) * 26;
-        px2 === -20 ? x.moveTo(px2, yy) : x.lineTo(px2, yy);
+      for (let sx = -20; sx <= W + 20; sx += 36) {
+        const yy = baseY + Math.sin(sx * 0.007 + t * 0.03 + band * 2.4) * 30 + Math.sin(sx * 0.021 + t * 0.05) * 8;
+        sx === -20 ? x.moveTo(sx, yy) : x.lineTo(sx, yy);
       }
+      const flick = 0.7 + 0.3 * Math.sin(t * 0.02 + band * 2.1);
+      x.strokeStyle = glow;
+      x.lineWidth = 42 - band * 7;
+      x.globalAlpha = 0.34 * flick;
+      x.stroke();
+      x.strokeStyle = core;
+      x.lineWidth = 13 - band * 2.5;
+      x.globalAlpha = 0.6 * flick;
       x.stroke();
     }
     x.globalAlpha = 1;
-    // 雪花
-    for (let i = 0; i < 18; i++) {
-      const sx = ((i * 149 + 30) - (t * 0.18 + i * 13) % W) % W;
-      const sy = ((i * 211 + 20) + t * 0.25) % (horizon + 60);
-      x.globalAlpha = 0.6;
-      x.fillStyle = '#dff4ff';
-      x.fillRect(sx, sy, 2.5, 2.5);
-    }
-    x.globalAlpha = 1;
+    // 冷月与光晕
+    const mx = W * 0.76, my = horizon - 265;
+    const mg = x.createRadialGradient(mx, my, 6, mx, my, 130);
+    mg.addColorStop(0, 'rgba(220,245,255,.5)');
+    mg.addColorStop(1, 'rgba(220,245,255,0)');
+    x.fillStyle = mg; x.fillRect(mx - 140, my - 140, 280, 280);
+    x.fillStyle = '#eaf7ff';
+    x.beginPath(); x.arc(mx, my, 24, 0, 7); x.fill();
+    // 冰峰（迎光面提亮）
+    const spire = (list, col, par, base, rim) => {
+      for (const s2 of list) {
+        const sx2 = parX(s2.x, off * par, d.span);
+        const top = base - s2.h;
+        x.fillStyle = col;
+        x.beginPath();
+        x.moveTo(sx2 - s2.w / 2, base + 6);
+        x.lineTo(sx2 + s2.lean * s2.h * 0.35, top);
+        x.lineTo(sx2 + s2.w / 2, base + 6);
+        x.closePath(); x.fill();
+        if (rim) {
+          x.fillStyle = alphaCss(rim, 0.3);
+          x.beginPath();
+          x.moveTo(sx2 - s2.w / 2, base + 6);
+          x.lineTo(sx2 + s2.lean * s2.h * 0.35, top);
+          x.lineTo(sx2 + s2.lean * s2.h * 0.35 + s2.w * 0.2, top + s2.h * 0.12);
+          x.closePath(); x.fill();
+        }
+      }
+    };
+    spire(d.far, pal.farCol, 0.10, horizon + 22, null);
+    spire(d.mid, pal.midCol, 0.22, horizon + 32, '#dff4ff');
+    spire(d.near, pal.nearCol, 0.40, horizon + 40, '#dff4ff');
+    bgReflection(() => spire(d.near, pal.nearCol, 0.40, horizon + 40, null), 0.14);
   } else if (kind === 'data') {
-    // 网格
-    x.strokeStyle = 'rgba(120,60,220,.12)';
+    // 透视网格（横线按幂次收敛到视平线）
+    const vpY = horizon;
+    x.strokeStyle = alphaCss(pal.accent, 0.09);
     x.lineWidth = 1;
-    for (let gx2 = 0; gx2 < W; gx2 += 70) {
-      x.beginPath(); x.moveTo(gx2, 0); x.lineTo(gx2, gy()); x.stroke();
+    for (let i = 0; i <= 10; i++) {
+      const yy = vpY - Math.pow(i / 10, 1.8) * vpY * 0.8;
+      x.beginPath(); x.moveTo(0, yy); x.lineTo(W, yy); x.stroke();
     }
-    // 数字雨
+    for (let i = -12; i <= 12; i++) {
+      const fx2 = i * 96 - side * (t * 1.6 % 96);
+      x.beginPath();
+      x.moveTo(W / 2 + fx2 * 0.06, vpY);
+      x.lineTo(W / 2 + fx2 * 1.6, vpY - vpY * 0.8);
+      x.stroke();
+    }
+    bgTowerLayer(d.far, pal.farCol, off * 0.12, horizon + 26, null);
+    bgTowerLayer(d.mid, pal.midCol, off * 0.26, horizon + 34, { win: true, winCol: pal.accent });
+    bgTowerLayer(d.near, pal.nearCol, off * 0.44, horizon + 40, null);
+    // 竖直下落的代码雨
     x.font = 'bold 13px Consolas';
     x.textAlign = 'left';
-    for (let i = 0; i < 16; i++) {
-      const cx2 = (i * 91 + 20) % W;
-      const cy2 = (t * 0.5 + i * 60) % (horizon + 80);
-      x.globalAlpha = Math.max(0.1, 0.5 - cy2 / (horizon + 80) * 0.5);
-      x.fillStyle = i % 2 ? '#7c3fe0' : '#4fe3ff';
-      const ch = '01'[(Math.floor(t * 0.1) + i) % 2] + String(i % 10);
-      x.fillText(ch, cx2, cy2);
+    for (let i = 0; i < 22; i++) {
+      const rx = parX(i * 83 + 21, off * 0.3, d.span);
+      const ry = (t * (0.35 + (i % 5) * 0.12) + i * 137) % (horizon + 70);
+      x.globalAlpha = Math.max(0, 0.55 - ry / (horizon + 70) * 0.5);
+      x.fillStyle = i % 3 === 0 ? pal.accent2 : pal.accent;
+      x.fillText(i % 2 ? '1' : '0', rx, ry);
     }
     x.globalAlpha = 1;
     x.textAlign = 'center';
+    // 自上而下的扫描线
+    x.fillStyle = alphaCss(pal.accent, 0.10);
+    x.fillRect(0, (t * 1.1) % (horizon + 40), W, 2);
   } else if (kind === 'sky') {
     // 日光晕
-    const sun = x.createRadialGradient(W * 0.28, horizon - 190, 10, W * 0.28, horizon - 190, 220);
-    sun.addColorStop(0, 'rgba(255,220,150,.28)');
-    sun.addColorStop(1, 'rgba(255,220,150,0)');
-    x.fillStyle = sun;
-    x.fillRect(0, 0, W, horizon);
-    // 远处浮空岛（两层视差）
-    const island = (par, col, seed) => {
-      x.fillStyle = col;
-      for (let i = 0; i < 6; i++) {
-        const ix = ((i * 330 + seed * 40) - (side * par * (t * 0.08 % 1400))) % (W + 300) - 150;
-        const iy = horizon - 40 - ((seed * (i + 2) * 53) % 110);
-        const iw = 70 + ((seed * (i + 5) * 29) % 60);
-        x.beginPath();
-        x.ellipse(ix, iy, iw, 20, 0, 0, 7);
-        x.fill();
-        x.fillRect(ix - iw * 0.35, iy - 36, iw * 0.7, 18);
+    const sx3 = W * 0.24, sy3 = horizon - 250;
+    const sg = x.createRadialGradient(sx3, sy3, 10, sx3, sy3, 260);
+    sg.addColorStop(0, 'rgba(255,238,190,.32)');
+    sg.addColorStop(1, 'rgba(255,238,190,0)');
+    x.fillStyle = sg; x.fillRect(sx3 - 280, sy3 - 280, 560, 560);
+    x.fillStyle = alphaCss('#fff6d8', 0.55);
+    x.beginPath(); x.arc(sx3, sy3, 32, 0, 7); x.fill();
+    // 云带（径向渐变软圆，逐个叠加出体积感）
+    const cloud = (list, par, col, alpha) => {
+      for (const cl of list) {
+        const cx3 = parX(cl.x, off * par, d.span);
+        const cg = x.createRadialGradient(cx3, cl.y, 4, cx3, cl.y, cl.w * 0.9);
+        cg.addColorStop(0, alphaCss(col, alpha));
+        cg.addColorStop(1, alphaCss(col, 0));
+        x.fillStyle = cg;
+        x.fillRect(cx3 - cl.w, cl.y - cl.w * 0.5, cl.w * 2, cl.w);
       }
     };
-    island(0.4, '#2a1f5e', 5);
-    island(0.75, '#3b2c7d', 11);
-    // 云朵漂移
-    for (let i = 0; i < 9; i++) {
-      const cx = ((i * 263 + 60) - (side * (t * (0.12 + (i % 3) * 0.03) % 2200))) % (W + 260) - 130;
-      const cy = horizon - 60 - ((i * 97) % (horizon * 0.55));
-      x.globalAlpha = 0.2 + (i % 3) * 0.08;
-      x.fillStyle = '#cdc2ff';
-      x.beginPath();
-      x.arc(cx, cy, 24 + (i % 2) * 10, 0, 7);
-      x.arc(cx + 26, cy - 6, 18 + (i % 2) * 8, 0, 7);
-      x.arc(cx - 26, cy + 2, 16 + (i % 2) * 8, 0, 7);
-      x.fill();
-    }
-    x.globalAlpha = 1;
-  } else if (kind === 'desert') {
-    // 远山沙丘（两层）
-    for (let i = 0; i < 2; i++) {
-      x.fillStyle = i ? '#6e3a12' : '#8a4a16';
-      x.globalAlpha = i ? 0.5 : 0.8;
-      x.beginPath();
-      x.moveTo(0, horizon + 10);
-      for (let px3 = 0; px3 <= W; px3 += 60) {
-        const yy = horizon - 30 - i * 22 + Math.sin(px3 * 0.006 + i * 3 + (t * 0.01)) * (14 - i * 6);
-        x.lineTo(px3, yy);
-      }
-      x.lineTo(W, horizon + 10);
-      x.closePath();
-      x.fill();
-    }
-    x.globalAlpha = 1;
-    // 金字塔剪影
-    const pyr = (par, col, seed) => {
-      x.fillStyle = col;
-      for (let i = 0; i < 7; i++) {
-        const bx = ((i * 240 + seed * 30) - (side * par * (t * 0.09 % 1600))) % (W + 320) - 160;
-        const pw = 50 + ((seed * (i + 3) * 23) % 60);
-        const ph = 40 + ((seed * (i + 7) * 19) % 80);
+    // 浮空岛：岩体 + 倒锥底 + 草皮顶
+    const island = (list, par, rockCol, topCol) => {
+      for (const is of list) {
+        const ix = parX(is.x, off * par, d.span);
+        x.fillStyle = rockCol;
+        x.beginPath(); x.ellipse(ix, is.y, is.w * 0.5, is.h * 0.9, 0, 0, 7); x.fill();
         x.beginPath();
-        x.moveTo(bx - pw, horizon + 4);
-        x.lineTo(bx, horizon - ph);
-        x.lineTo(bx + pw, horizon + 4);
-        x.closePath();
-        x.fill();
+        x.moveTo(ix - is.w * 0.42, is.y);
+        x.lineTo(ix, is.y + is.h * 2.1);
+        x.lineTo(ix + is.w * 0.42, is.y);
+        x.closePath(); x.fill();
+        x.fillStyle = topCol;
+        x.beginPath(); x.ellipse(ix, is.y - is.h * 0.5, is.w * 0.5, is.h * 0.62, 0, 0, 7); x.fill();
       }
     };
-    pyr(0.5, '#7a4514', 9);
-    pyr(0.85, '#a35f1c', 17);
-    // 热气微尘
-    for (let i = 0; i < 10; i++) {
-      const hx = ((i * 191 + 20) - (t * 0.06 + i * 20) % W + W) % W;
-      const hy = horizon - ((i * 53 + t * 0.12) % 140);
-      x.globalAlpha = 0.18 + 0.12 * Math.sin(t * 0.05 + i * 2);
-      x.fillStyle = '#ffd9a0';
-      x.fillRect(hx, hy, 2, 2);
-    }
-    x.globalAlpha = 1;
-  } else if (kind === 'sea') {
-    // 光线柱（顶部斜光）
-    x.globalAlpha = 0.07;
-    x.fillStyle = '#7ef7ff';
+    cloud(d.far, 0.06, '#e6dcff', 0.22);
+    island(d.far, 0.10, '#2f2360', '#3d2f78');
+    island(d.mid, 0.20, '#3a2b72', '#4a3890');
+    cloud(d.mid, 0.16, '#d8ccff', 0.30);
+    cloud(d.near, 0.12, '#cdc2ff', 0.32);
+    // 远处飞鸟
     for (let i = 0; i < 5; i++) {
-      const lx = ((i * 460 + 120) - (side * (t * 0.03 % 800))) % (W + 400) - 200;
+      const bx2 = parX(i * 260 + 60, off * 0.14, d.span);
+      const by2 = horizon - 215 - (i % 3) * 34 + Math.sin(t * 0.02 + i) * 6;
+      const flap = Math.sin(t * 0.12 + i * 1.7) * 4;
+      x.strokeStyle = alphaCss('#b9a8e8', 0.5);
+      x.lineWidth = 1.6;
       x.beginPath();
-      x.moveTo(lx, 0);
-      x.lineTo(lx + 90, horizon);
-      x.lineTo(lx + 150, horizon);
-      x.lineTo(lx + 40, 0);
-      x.fill();
-    }
-    x.globalAlpha = 1;
-    // 珊瑚/海草剪影
-    for (let i = 0; i < 12; i++) {
-      const sx = ((i * 213 + 40) - (side * (t * 0.1 % 1800))) % (W + 160) - 80;
-      const sh = 30 + (i % 4) * 22;
-      const sway = Math.sin(t * 0.03 + i * 1.7);
-      x.strokeStyle = i % 2 ? '#0a4a5a' : '#0d6a6a';
-      x.lineWidth = 5;
-      x.lineCap = 'round';
-      x.beginPath();
-      x.moveTo(sx, horizon + 2);
-      x.quadraticCurveTo(sx + sway * 8, horizon - sh * 0.6, sx - sway * 10, horizon - sh);
+      x.moveTo(bx2 - 7, by2 + flap); x.lineTo(bx2, by2); x.lineTo(bx2 + 7, by2 + flap);
       x.stroke();
     }
-    // 上浮气泡
-    for (let i = 0; i < 14; i++) {
-      const bx = ((i * 149 + 30) + Math.sin(t * 0.02 + i) * 30) % W;
-      const by = horizon + 30 - ((t * 0.5 + i * 80) % (horizon + 40));
-      x.globalAlpha = 0.25 + 0.2 * Math.sin(t * 0.06 + i);
-      x.strokeStyle = '#9adcff';
-      x.lineWidth = 1.2;
-      x.beginPath(); x.arc(bx, by, 2 + (i % 3), 0, 7); x.stroke();
+  } else if (kind === 'desert') {
+    // 落日
+    const dx2 = W * 0.7, dy2 = horizon - 120;
+    const dg = x.createRadialGradient(dx2, dy2, 8, dx2, dy2, 230);
+    dg.addColorStop(0, 'rgba(255,214,138,.42)');
+    dg.addColorStop(0.4, 'rgba(255,150,60,.16)');
+    dg.addColorStop(1, 'rgba(255,150,60,0)');
+    x.fillStyle = dg; x.fillRect(dx2 - 250, dy2 - 250, 500, 500);
+    x.fillStyle = '#ffd98a';
+    x.beginPath(); x.arc(dx2, dy2, 44, 0, 7); x.fill();
+    // 沙丘：正弦起伏 + 顶缘受光
+    const dune = (par, col, rimCol, amp, base) => {
+      const wave = (px7) => base - Math.sin((px7 + off * par * 0.6) * 0.0032 + par * 9) * amp;
+      x.fillStyle = col;
+      x.beginPath(); x.moveTo(0, base + 12);
+      for (let px7 = 0; px7 <= W; px7 += 40) x.lineTo(px7, wave(px7));
+      x.lineTo(W, base + 12); x.closePath(); x.fill();
+      x.strokeStyle = alphaCss(rimCol, 0.5);
+      x.lineWidth = 2;
+      x.beginPath();
+      for (let px7 = 0; px7 <= W; px7 += 40) px7 === 0 ? x.moveTo(px7, wave(px7)) : x.lineTo(px7, wave(px7));
+      x.stroke();
+    };
+    dune(0.05, pal.farCol, '#ffd9a0', 16, horizon - 34);
+    dune(0.12, pal.midCol, '#ffc98a', 22, horizon - 10);
+    // 古迹剪影：金字塔 + 方尖碑
+    for (const p of d.mid) {
+      const bx3 = parX(p.x, off * 0.16, d.span);
+      x.fillStyle = pal.midCol;
+      x.beginPath();
+      x.moveTo(bx3 - p.w / 2, horizon + 2);
+      x.lineTo(bx3, horizon - p.h);
+      x.lineTo(bx3 + p.w / 2, horizon + 2);
+      x.closePath(); x.fill();
     }
-    x.globalAlpha = 1;
-  } else if (kind === 'space') {
-    // 行星
-    const px4 = W * 0.78, py2 = horizon * 0.42;
-    const ring = x.createRadialGradient(px4, py2, 8, px4, py2, 90);
-    ring.addColorStop(0, 'rgba(180,120,255,.5)');
-    ring.addColorStop(1, 'rgba(180,120,255,0)');
-    x.fillStyle = ring;
-    x.fillRect(px4 - 100, py2 - 100, 200, 200);
-    x.fillStyle = '#7c4ad8';
-    x.beginPath(); x.arc(px4, py2, 36, 0, 7); x.fill();
-    x.fillStyle = '#9d6bff';
-    x.beginPath(); x.arc(px4 - 8, py2 - 8, 30, 0, 7); x.fill();
-    x.strokeStyle = 'rgba(226,210,255,.5)';
-    x.lineWidth = 4;
-    x.beginPath(); x.ellipse(px4, py2, 62, 14, -0.3, 0, 7); x.stroke();
-    // 预生成星点
-    for (const st of spaceStars) {
-      const sx = (st.x - side * (t * st.par * 0.05 % (W + 40)) + W + 40) % (W + 40) - 20;
-      x.globalAlpha = st.a * (0.6 + 0.4 * Math.sin(t * st.tw + st.ph));
-      x.fillStyle = st.col;
-      x.fillRect(sx, st.y, st.s, st.s);
+    for (const p of d.near) {
+      const bx3 = parX(p.x, off * 0.30, d.span);
+      const w2 = 16 + (p.seed % 10);
+      const h2 = p.h * 1.6;
+      x.fillStyle = pal.nearCol;
+      x.fillRect(bx3 - w2 / 2, horizon + 4 - h2, w2, h2);
+      x.beginPath();
+      x.moveTo(bx3 - w2 / 2, horizon + 4 - h2);
+      x.lineTo(bx3, horizon + 4 - h2 - w2 * 0.9);
+      x.lineTo(bx3 + w2 / 2, horizon + 4 - h2);
+      x.closePath(); x.fill();
     }
-    x.globalAlpha = 1;
-    // 流星
-    for (let i = 0; i < 2; i++) {
-      const mt = (t * 0.12 + i * 900) % 1600;
-      const mx = ((i * 600 + 100) - side * mt * 1.4) % (W + 300);
-      const my = 40 + i * 120 + mt * 0.35;
-      if (my < horizon) {
-        x.globalAlpha = 0.7;
-        x.strokeStyle = '#e2d2ff';
-        x.lineWidth = 1.5;
-        x.beginPath(); x.moveTo(mx, my); x.lineTo(mx + side * 60, my + 14); x.stroke();
-        x.globalAlpha = 1;
+    dune(0.34, pal.nearCol, '#ffb877', 14, horizon + 34);
+    // 热气蒸腾
+    for (let i = 0; i < 4; i++) {
+      x.fillStyle = alphaCss('#ffd9a0', 0.06);
+      x.fillRect(0, horizon - 24 - i * 26 + Math.sin(t * 0.03 + i) * 3, W, 5);
+    }
+  } else if (kind === 'sea') {
+    // 水面透下的光柱
+    for (let i = 0; i < 6; i++) {
+      const lx = parX(i * 300 + 60, off * 0.04, d.span);
+      const lg = x.createLinearGradient(lx, 0, lx + 170, horizon);
+      lg.addColorStop(0, 'rgba(160,240,255,.13)');
+      lg.addColorStop(1, 'rgba(160,240,255,0)');
+      x.fillStyle = lg;
+      x.beginPath();
+      x.moveTo(lx, 0); x.lineTo(lx + 54, 0);
+      x.lineTo(lx + 214, horizon); x.lineTo(lx + 98, horizon);
+      x.closePath(); x.fill();
+    }
+    // 中层漂浮水母（发光伞盖 + 触手）
+    for (const j of d.mid) {
+      const jx = parX(j.x, off * 0.14, d.span);
+      const jy = j.y + Math.sin(t * 0.02 + j.ph) * 14;
+      const col = j.hue < 0.5 ? pal.accent : pal.accent2;
+      const jg = x.createRadialGradient(jx, jy, 2, jx, jy, j.r * 2.4);
+      jg.addColorStop(0, alphaCss(col, 0.32));
+      jg.addColorStop(1, alphaCss(col, 0));
+      x.fillStyle = jg;
+      x.fillRect(jx - j.r * 2.4, jy - j.r * 2.4, j.r * 4.8, j.r * 4.8);
+      x.fillStyle = alphaCss(col, 0.5);
+      x.beginPath(); x.arc(jx, jy, j.r * 0.7, Math.PI, 0); x.fill();
+      x.strokeStyle = alphaCss(col, 0.32);
+      x.lineWidth = 1.4;
+      for (let k = 0; k < 4; k++) {
+        const tx2 = jx - j.r * 0.5 + k * j.r * 0.34;
+        x.beginPath();
+        x.moveTo(tx2, jy);
+        x.quadraticCurveTo(tx2 + Math.sin(t * 0.03 + k) * 7, jy + j.r * 0.9,
+          tx2 + Math.sin(t * 0.03 + k) * 4, jy + j.r * 1.7);
+        x.stroke();
       }
+    }
+    // 近景海草
+    x.lineCap = 'round';
+    for (const s3 of d.near) {
+      const sx4 = parX(s3.x, off * 0.36, d.span);
+      const sway = Math.sin(t * 0.025 + s3.sway);
+      x.strokeStyle = alphaCss(pal.accent, 0.28);
+      x.lineWidth = 6;
+      x.beginPath();
+      x.moveTo(sx4, horizon + 42);
+      x.quadraticCurveTo(sx4 + sway * 10, horizon + 42 - s3.h * 0.6, sx4 - sway * 14, horizon + 42 - s3.h);
+      x.stroke();
+    }
+    // 海底焦散光斑
+    for (let i = 0; i < 10; i++) {
+      const cx4 = parX(i * 173 + 30, off * 0.2, d.span);
+      const rr = 30 + (i % 4) * 16;
+      x.fillStyle = alphaCss('#7ef7ff', 0.05 + 0.03 * Math.sin(t * 0.04 + i));
+      x.beginPath();
+      x.ellipse(cx4, horizon + 46, rr, rr * 0.22, 0, 0, 7);
+      x.fill();
+    }
+  } else if (kind === 'space') {
+    // 星云：三团体积光叠加
+    const neb = (nx, ny, nr, col, a) => {
+      const ng = x.createRadialGradient(nx, ny, nr * 0.08, nx, ny, nr);
+      ng.addColorStop(0, alphaCss(col, a));
+      ng.addColorStop(0.55, alphaCss(col, a * 0.35));
+      ng.addColorStop(1, alphaCss(col, 0));
+      x.fillStyle = ng;
+      x.fillRect(nx - nr, ny - nr, nr * 2, nr * 2);
+    };
+    neb(W * 0.24, horizon * 0.42, W * 0.34, '#7c3fe0', 0.22);
+    neb(W * 0.68, horizon * 0.66, W * 0.30, '#2a6bd8', 0.18);
+    neb(W * 0.46, horizon * 0.26, W * 0.22, '#ff4fd8', 0.12);
+    // 三层视差星点（带闪烁）
+    for (const st of d.stars) {
+      const sx5 = parX(st.x, off * st.par * 0.35, d.span);
+      x.globalAlpha = st.a * (0.55 + 0.45 * Math.sin(t * st.tw + st.ph));
+      x.fillStyle = '#fff';
+      x.fillRect(sx5, st.y, st.s, st.s);
+    }
+    x.globalAlpha = 1;
+    // 行星：径向光照 + 云带 + 双环
+    const px8 = W * 0.78, py8 = horizon * 0.4;
+    const pg = x.createRadialGradient(px8 - 16, py8 - 16, 4, px8, py8, 46);
+    pg.addColorStop(0, '#b98cff');
+    pg.addColorStop(0.62, '#7c4ad8');
+    pg.addColorStop(1, '#2a1050');
+    x.fillStyle = pg;
+    x.beginPath(); x.arc(px8, py8, 44, 0, 7); x.fill();
+    x.save();
+    x.beginPath(); x.arc(px8, py8, 44, 0, 7); x.clip();
+    x.fillStyle = alphaCss('#e2d2ff', 0.16);
+    for (let i = 0; i < 3; i++) x.fillRect(px8 - 50, py8 - 22 + i * 22 + Math.sin(t * 0.01 + i) * 3, 100, 7);
+    x.restore();
+    x.strokeStyle = 'rgba(226,210,255,.42)';
+    x.lineWidth = 5;
+    x.beginPath(); x.ellipse(px8, py8, 74, 17, -0.34, 0, 7); x.stroke();
+    x.strokeStyle = 'rgba(226,210,255,.2)';
+    x.lineWidth = 2;
+    x.beginPath(); x.ellipse(px8, py8, 86, 20, -0.34, 0, 7); x.stroke();
+    // 流星（渐变拖尾）
+    for (let i = 0; i < 3; i++) {
+      const mt = (t * 0.9 + i * 900) % 1800;
+      const mx2 = parX(i * 520 + 120, off * 0.2, d.span) + mt * 1.4 * side;
+      const my2 = 30 + (i % 2) * 90 + mt * 0.32;
+      if (my2 < horizon) {
+        const tg = x.createLinearGradient(mx2, my2, mx2 + side * 110, my2 - 22);
+        tg.addColorStop(0, 'rgba(255,255,255,.8)');
+        tg.addColorStop(1, 'rgba(255,255,255,0)');
+        x.strokeStyle = tg;
+        x.lineWidth = 1.8;
+        x.beginPath(); x.moveTo(mx2, my2); x.lineTo(mx2 + side * 110, my2 - 22); x.stroke();
+      }
+    }
+    // 近景陨石带（暗剪影，拉出纵深）
+    for (let i = 0; i < 7; i++) {
+      const rx2 = parX(i * 210 + 40, off * 0.5, d.span);
+      const ry2 = horizon - 210 + (i % 4) * 48;
+      x.fillStyle = 'rgba(18,10,44,.85)';
+      x.beginPath(); x.arc(rx2, ry2, 5 + (i % 3) * 3, 0, 7); x.fill();
     }
   } else if (kind === 'cyber') {
-    // 光隧透视网格
-    const cx2 = W / 2, cy2 = horizon * 0.8;
-    x.strokeStyle = 'rgba(80,180,255,.1)';
-    x.lineWidth = 1;
-    for (let i = 0; i <= 12; i++) {
-      const yy = horizon - Math.pow(i / 12, 1.6) * horizon * 0.75;
-      x.beginPath(); x.moveTo(0, yy); x.lineTo(W, yy); x.stroke();
-    }
-    x.strokeStyle = 'rgba(80,180,255,.08)';
-    for (let i = -14; i <= 14; i++) {
-      const off = i * 90 - side * ((t * 1.4) % 90);
+    const vx = W / 2, vy = horizon - 40;      // 灭点
+    // 隧道环：由远及近循环推进（近处更亮更粗）
+    x.lineWidth = 2;
+    for (let i = 0; i < 14; i++) {
+      const z = ((i / 14) + (t * 0.004) % (1 / 14)) % 1;
+      const k = z * z;
+      x.strokeStyle = alphaCss(i % 2 ? pal.accent2 : pal.accent, 0.10 + k * 0.4);
       x.beginPath();
-      x.moveTo(cx2 + off * 0.08, horizon);
-      x.lineTo(cx2 + off, horizon - horizon * 0.75);
+      x.ellipse(vx, vy + k * 40, 40 + k * W * 0.95, 16 + k * (horizon - vy) * 1.7, 0, 0, 7);
       x.stroke();
     }
-    // 光轨（侧向霓虹带）
-    for (let i = 0; i < 3; i++) {
-      const gy2 = horizon - 30 - i * 90;
-      const gl = x.createLinearGradient(0, gy2 - 3, W, gy2 - 3);
-      gl.addColorStop(0, 'rgba(78,227,255,0)');
-      gl.addColorStop(0.5, 'rgba(78,227,255,' + (0.18 - i * 0.05) + ')');
-      gl.addColorStop(1, 'rgba(255,95,168,0)');
-      x.fillStyle = gl;
-      x.fillRect(0, gy2 - 2, W, 4);
+    // 天花板 / 地板透视网格
+    x.strokeStyle = alphaCss(pal.accent, 0.10);
+    for (let i = -14; i <= 14; i++) {
+      const rx3 = i * 76 - side * (t * 1.2 % 76);
+      x.beginPath(); x.moveTo(vx + rx3 * 0.04, vy); x.lineTo(vx + rx3 * 2.6, H); x.stroke();
+      x.beginPath(); x.moveTo(vx + rx3 * 0.04, vy); x.lineTo(vx + rx3 * 2.6, 0); x.stroke();
     }
-    x.globalAlpha = 1;
+    // 侧向霓虹导轨
+    for (let i = 0; i < 4; i++) {
+      const gl = x.createLinearGradient(0, 0, W, 0);
+      gl.addColorStop(0, alphaCss(pal.accent, 0.32 - i * 0.06));
+      gl.addColorStop(0.5, alphaCss(pal.accent2, 0.16));
+      gl.addColorStop(1, alphaCss(pal.accent, 0.32 - i * 0.06));
+      x.fillStyle = gl;
+      x.fillRect(0, horizon - 20 - i * 76, W, 4);
+    }
+    // 汇聚光核
+    const cg2 = x.createRadialGradient(vx, vy, 4, vx, vy, 220);
+    cg2.addColorStop(0, alphaCss(pal.accent, 0.28));
+    cg2.addColorStop(1, alphaCss(pal.accent, 0));
+    x.fillStyle = cg2;
+    x.fillRect(vx - 230, vy - 230, 460, 460);
   }
+
+  // ===== 共享大气层：地平线光晕 → 空气雾 → 氛围粒子 → 地面压暗 → 暗角 =====
+  const fx = fxGrads(c);
+  x.fillStyle = fx.horizonGlow;
+  x.fillRect(0, 0, W, H);
+  x.fillStyle = fx.fog;
+  x.fillRect(0, horizon - 200, W, 220);
+  // 氛围粒子：按主题决定上升 / 下落方向
+  const mc = MOTES[kind] || MOTES.city;
+  for (const m of d.motes) {
+    const mx3 = parX(m.x, off * 0.55, d.span);
+    let my3 = m.y - t * mc.rise * m.sp * 0.35;
+    my3 = ((my3 % horizon) + horizon) % horizon;
+    x.globalAlpha = m.a * (0.5 + 0.5 * Math.sin(t * 0.05 + m.ph));
+    x.fillStyle = pal.accent;
+    x.beginPath(); x.arc(mx3, my3, m.r, 0, 7); x.fill();
+  }
+  x.globalAlpha = 1;
+  x.fillStyle = fx.groundFade;
+  x.fillRect(0, horizon, W, H - horizon);
+  x.fillStyle = fx.vignette;
+  x.fillRect(0, 0, W, H);
 }
 function drawObstacle(o, ground, c, t) {
   const th = c.theme;
@@ -3856,12 +4344,13 @@ function finish() {
   endDeathEl.innerHTML = '关卡：' + c.icon + ' ' + c.title + '　方向：' + (side === 1 ? '左→右' : '右→左') + '　' + deathText(lastDeath);
   const used = itemsUsed.length ? '　道具：' + itemsUsed.map(i => ACTIVE_ITEM_MAP.get(i).name).join('、') : '';
   const pk = pickupsGot ? '　拾取道具 ×' + pickupsGot : '';
+  const dmg = runStats.hits ? '　承受伤害 ' + runStats.hits + ' 次' : '　零伤通关';
   runDetailEl.innerHTML =
-    '存活 ' + Math.floor(gameT / 60) + 's · 最高连击 ' + comboMax + used + pk;
+    '存活 ' + Math.floor(gameT / 60) + 's · 最高连击 ' + comboMax + dmg + used + pk;
   endTitleEl.textContent =
-    lastDeath === 'dog' ? '被狗咬住了！' :
-    lastDeath === 'laser' ? '被激光扫中！' :
-    comboMax >= 12 ? '连击之王！' : comboMax >= 6 ? '身手不错！' : '撞上了';
+    comboMax >= 12 ? '连击之王！' :
+    lastDeath === 'dog' ? '被疯狗咬倒了！' :
+    lastDeath === 'laser' ? '被激光扫倒了！' : '生命耗尽！';
   bestEl.textContent = best;
   end.classList.remove('off');
 }
