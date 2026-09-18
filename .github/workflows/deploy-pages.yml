@@ -27,10 +27,22 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload static site (app/)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Pages 只需要混淆器，跳过 electron 的二进制下载
+      - name: Install protection tooling
+        run: npm install --include=dev --no-omit --ignore-scripts
+
+      - name: Obfuscate game source
+        run: npm run protect
+
+      - name: Upload static site (obfuscated)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./app
+          path: ./build-protected/app
 
       - name: Deploy to GitHub Pages
         id: deployment

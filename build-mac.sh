@@ -9,23 +9,26 @@
 set -e
 cd "$(dirname "$0")"
 
-echo "==> 1/4 检查 Node.js ..."
+echo "==> 1/5 检查 Node.js ..."
 if ! command -v node >/dev/null 2>&1; then
   echo "未找到 Node.js，请先安装: https://nodejs.org (LTS 即可)"
   exit 1
 fi
 node -v
 
-echo "==> 2/4 安装依赖 (electron + electron-builder)..."
+echo "==> 2/5 安装依赖 (electron + electron-builder)..."
 # 国内网络可取消注释下行使用镜像加速
 # export ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
 # export ELECTRON_BUILDER_BINARIES_MIRROR="https://npmmirror.com/mirrors/electron-builder-binaries/"
 npm install --include=dev --no-omit
 
-echo "==> 3/4 构建 macOS 应用 (.app / .dmg / .zip，含 arm64+x64)"
+echo "==> 3/5 混淆源码 (生成 build-protected/，打包只读这里)"
+npm run protect
+
+echo "==> 4/5 构建 macOS 应用 (.app / .dmg / .zip，含 arm64+x64)"
 npx electron-builder --mac
 
-echo "==> 4/4 完成！产物在 dist/ 目录:"
+echo "==> 5/5 完成！产物在 dist/ 目录:"
 ls -lh dist/*.dmg dist/*.zip 2>/dev/null || ls -lh dist/
 echo ""
 echo "安装: 双击 .dmg 把 霓虹跑酷.app 拖入 应用程序 即可。"

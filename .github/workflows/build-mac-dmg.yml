@@ -19,6 +19,10 @@ jobs:
       - name: Install dependencies
         run: npm install --include=dev --no-omit
 
+      # 混淆源码，产物写入 build-protected/（打包只读这个目录）
+      - name: Protect source
+        run: npm run protect
+
       # 按 package.json 的 mac.target 构建：dmg + zip, arm64 + x64
       - name: Build macOS packages
         run: npx electron-builder --mac --publish never

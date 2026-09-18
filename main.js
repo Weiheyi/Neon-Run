@@ -8,6 +8,14 @@ const path = require('path');
 let win = null;
 const UPDATE_REPO = 'wuhaoyang1126-code/Project1';
 const UPDATE_API_URL = process.env.NEONRUN_UPDATE_API_URL || `https://api.github.com/repos/${UPDATE_REPO}/releases/latest`;
+
+// 打包后禁止通过命令行开关挂载远程调试器（CDP 可直接读取全部源码）
+if (app.isPackaged) {
+  ['remote-debugging-port', 'remote-debugging-pipe', 'inspect', 'inspect-brk'].forEach(name => {
+    if (app.commandLine.hasSwitch(name)) app.commandLine.removeSwitch(name);
+  });
+}
+
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 let updateState = {
   state: 'idle',
@@ -219,6 +227,8 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: true,
       spellcheck: false,
+      // 打包后关闭开发者工具：防止通过 DevTools 直接读取源码
+      devTools: !app.isPackaged,
     },
   });
 
@@ -237,10 +247,14 @@ function createWindow() {
     setTimeout(() => checkForUpdates({ auto: true }).catch(() => {}), 1200);
   });
   win.webContents.on('before-input-event', (event, input) => {
-    if (input.type === 'keyDown' && ['F5', 'F11'].includes(input.key)) {
-      event.preventDefault();
-    }
-    // 允许方向键/空格正常传给页面；仅拦截刷新类
+    if (input.type !== 'keyDown') return;
+    const key = String(input.key || '').toLowerCase();
+    const ctrl = input.control || input.meta;
+    // 刷新 / 全屏 / 开发者工具类快捷键一律拦截
+    if (['F5', 'F11', 'F12'].includes(input.key)) { event.preventDefault(); return; }
+    if (ctrl && !input.shift && ['r', 'u', 'p', 's', 'o'].includes(key)) { event.preventDefault(); return; }
+    if (ctrl && input.shift && ['i', 'j', 'c', 'k', 'e'].includes(key)) { event.preventDefault(); return; }
+    // 允许方向键/空格正常传给页面
   });
 
   // 窗口状态变化（全屏/最大化）推送给渲染进程，设置面板同步显示

@@ -8,19 +8,26 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "protect": "node tools/protect.js",
+    "smoke": "electron tools/smoke-test.js build-protected",
+    "predist": "npm run protect",
     "dist": "electron-builder --win portable",
+    "predist:mac": "npm run protect",
     "dist:mac": "electron-builder --mac"
   },
   "build": {
     "appId": "com.neonrun.pc",
     "productName": "霓虹跑酷",
+    "asar": true,
     "files": [
       "main.js",
       "preload.js",
-      "app/**/*"
+      "app/**/*",
+      "package.json"
     ],
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "app": "build-protected"
     },
     "mac": {
       "category": "public.app-category.games",
@@ -63,6 +70,7 @@
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^26.0.0",
-    "electron-packager": "^17.1.2"
+    "electron-packager": "^17.1.2",
+    "javascript-obfuscator": "^5.7.0"
   }
 }
